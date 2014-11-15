@@ -29,7 +29,6 @@ class ProtocolHandler
     @commands.each_value { |cmd|
       if cmd[:obj].nil?; next; end
       match = cmd[:pattern].match(cmd_str.chomp)
-      p match
       unless match.nil?
         args = match.names.include?('args') && match[:args] || nil
         command = cmd[:obj].new(args)

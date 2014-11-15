@@ -68,9 +68,7 @@ class FTPCommandPasv < FTPCommand
 
   def do(session)
     begin
-      unless session.set_dtp(DTPPassive.new(session))
-        return FTPResponse500.new
-      end
+      session.set_dtp(DTPPassive.new(session))
       FTPResponse.new(227, "Entering passive mode (#{session.dtp.conn_info})")
     rescue Exception => e
       puts e
@@ -92,9 +90,7 @@ class FTPCommandPort < FTPCommand
     begin
       bind = @args[0].split(',')[0..3].join('.')
       port = @args[0].split(',')[4].to_i * 256 + @args[0].split(',')[5].to_i
-      unless session.set_dtp(DTPActive.new(session, bind, port))
-        raise Exception.new('Couldn\'t set DTP')
-      end
+      session.set_dtp(DTPActive.new(session, bind, port))
       FTPResponse200.new('Entered active mode')
     rescue Exception => e
       puts e
@@ -155,16 +151,12 @@ class FTPCommandRetr < FTPCommand
     begin
       raise Exception.new('File does not exist') if File.exists?(@args[0])
       path = Pathname.new(@args[0])
-      if path.relative?
-        path = (session.cwd + path).realpath
-      end
-      raise Exception.new('Couldn\'t open DTP') unless session.dtp.open
+      path = (session.cwd + path).realpath if path.relative?
+      session.dtp.open
       session.dtp.send(File.binread(path))
-
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
-
     rescue Exception => e
       puts e
       FTPResponse500.new

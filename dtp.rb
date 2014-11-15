@@ -67,6 +67,7 @@ class DTPPassive < DTP
   def open
     begin
       @client = @socket.accept
+      true
     rescue Exception => e
       puts e, e.backtrace
       false
@@ -75,9 +76,9 @@ class DTPPassive < DTP
 
   def send(data)
     begin
-      @client.write(data)
+      nb = @client.write(data)
       @client.close
-      true
+      nb
     rescue Exception => e
       puts e, e.backtrace
       false
@@ -85,8 +86,7 @@ class DTPPassive < DTP
   end
 
   def conn_info
-    arr = @session.server_ip.split('.') << @port / 256 << @port % 256
-    arr.join(',')
+    (@session.server_ip.split('.') << @port / 256 << @port % 256).join(',')
   end
 
 end

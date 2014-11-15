@@ -179,6 +179,29 @@ class FTPCommandRetr < FTPCommand
   end
 end
 
+# ==== DELE ====
+# Deletes server file
+class FTPCommandDele < FTPCommand
+  def initialize(path=nil)
+    super()
+    @code = 'DELE'
+    @args << path
+  end
+
+  def do(session)
+    begin
+      path = Pathname.new(@args[0])
+      path = (session.cwd + path) if path.relative?
+      raise Exception.new('File does not exist') unless File.exists?(path)
+      File.delete(path)
+      FTPResponse250.new("File \"#{path}\" deleted")
+    rescue Exception => e
+      puts e
+      FTPResponse500.new
+    end
+  end
+end
+
 # ==== SYST ====
 # Transfers the system type to the client
 class FTPCommandSyst < FTPCommand

@@ -15,6 +15,7 @@ class DTP
 
   def open; raise Exception.new('DTP::open not implemented'); end
   def send; raise Exception.new('DTP::send not implemented'); end
+  def recv; raise Exception.new('DTP::recv not implemented'); end
 
   def close
     begin
@@ -82,6 +83,17 @@ class DTPPassive < DTP
     rescue Exception => e
       puts e, e.backtrace
       false
+    end
+  end
+
+  def recv
+    begin
+      data = @client.read
+      @client.close
+      data
+    rescue Exception => e
+      puts e, e.backtrace
+      nil
     end
   end
 

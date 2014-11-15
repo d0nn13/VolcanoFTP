@@ -136,6 +136,21 @@ class FTPCommandStor < FTPCommand
     @code = 'STOR'
     @args << path
   end
+
+  def do(session)
+    begin
+      dest = session.cwd + Pathname.new(@args[0]).basename
+      session.dtp.open
+      data = session.dtp.recv
+      File.write(dest, data)
+      session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
+      session.dtp.close
+      FTPResponse.new(226, 'Closing data connection.')
+    rescue Exception => e
+      puts e
+      FTPResponse500.new
+    end
+  end
 end
 
 # ==== RETR ====

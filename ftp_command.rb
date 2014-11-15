@@ -164,9 +164,9 @@ class FTPCommandRetr < FTPCommand
 
   def do(session)
     begin
-      raise Exception.new('File does not exist') if File.exists?(@args[0])
       path = Pathname.new(@args[0])
-      path = (session.cwd + path).realpath if path.relative?
+      path = (session.cwd + path) if path.relative?
+      raise Exception.new('File does not exist') unless File.exists?(path)
       session.dtp.open
       session.dtp.send(File.binread(path))
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))

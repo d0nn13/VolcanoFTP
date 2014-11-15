@@ -14,6 +14,7 @@ class ProtocolHandler
         LIST: {obj: FTPCommandList, pattern: /^LIST(\s+(?<args>.+))?\s*$/i},
         STOR: {obj: FTPCommandStor, pattern: /^STOR\s+(?<args>.+)\s*$/i},
         RETR: {obj: FTPCommandRetr, pattern: /^RETR\s+(?<args>.+)\s*$/i},
+        DELE: {obj: FTPCommandDele, pattern: /^DELE\s+(?<args>.+)\s*$/i},
         SYST: {obj: FTPCommandSyst, pattern: /^SYST\s*$/i},
         FEAT: {obj: FTPCommandFeat, pattern: /^FEAT\s*$/i},
         TYPE: {obj: FTPCommandType, pattern: /^TYPE\s+(?<args>A|B|I|L\s+\d{0,2})\s*$/i},

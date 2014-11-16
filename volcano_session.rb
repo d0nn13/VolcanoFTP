@@ -5,15 +5,17 @@ require_relative 'ftp_response'
 
 
 class VolcanoSession
-  attr_reader :server_ip, :client, :ph, :dtp, :authentication, :cwd
+  attr_reader :root_dir, :server_ip, :external_ip, :client, :authentication, :cwd, :ph, :dtp
 
   def initialize(server, client)
     VolcanoLog.log_pid(Process.pid, "Process spawn for session n° #{server.session_id}")
     @id = server.session_id
-    @server_ip = server.settings[:bind]
+    @root_dir = server.root_dir
+    @server_ip = server.settings[:bind_ip]
+    @external_ip = server.settings[:external_ip]
     @client = client
     @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
-    @cwd = Pathname.new(Dir.home)
+    @cwd = Pathname.new('/')
 
     @ph = ProtocolHandler.new(self)
     @ph.send_response(FTPResponseGreet.new)
@@ -63,6 +65,18 @@ class VolcanoSession
     end
   end
 
+  def make_path(args)
+    if args.length.zero?
+      path = @cwd
+    else
+      path = Pathname.new(args[0]).expand_path(@cwd)   # TODO: handle ArgmentError: user xxx~ doesn't exist
+    end
+    path
+  end
+
+  def sys_path(path)
+    path.sub('/', @root_dir.to_s + '/')
+  end
 
   # Handle user authentication (USER|PASS)
   def user_authentication(user, pass=nil)

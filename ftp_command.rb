@@ -22,12 +22,7 @@ class FTPCommandPwd < FTPCommand
   end
 
   def do(session)
-    begin
-      FTPResponse.new(257, "\"#{session.cwd}\"")
-    rescue Exception => e
-      puts e
-      FTPResponse500.new
-    end
+    FTPResponse.new(257, "\"#{session.cwd}\"")
   end
 end
 
@@ -37,22 +32,20 @@ class FTPCommandCwd < FTPCommand
   def initialize(path=nil)
     super()
     @code = 'CWD'
-    @args << ((path.nil? && '.') || path)
+    @args << path unless path.nil?
   end
 
   def do(session)
     begin
-      path = Pathname.new(((@args[0] == '~') && Dir.home) || @args[0])
-      if path.relative?
-        path = (session.cwd + path).realpath
-      end
-      unless Dir.exists?(path)
+      path = session.make_path(@args)
+
+      unless Dir.exists?(session.sys_path(path))
         return FTPResponse.new(550, 'CWD command failed')
       end
       session.set_cwd(path)
-      FTPResponse250.new
+      FTPResponse250.new("Directory changed to #{path}")
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -71,7 +64,7 @@ class FTPCommandPasv < FTPCommand
       session.set_dtp(DTPPassive.new(session))
       FTPResponse.new(227, "Entering passive mode (#{session.dtp.conn_info})")
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -83,7 +76,7 @@ class FTPCommandPort < FTPCommand
   def initialize(port=nil)
     super()
     @code = 'PORT'
-    @args << port.gsub(/\s/, '')
+    @args << port.gsub(/\s/, '')  # remove spaces
   end
 
   def do(session)
@@ -102,27 +95,32 @@ end
 # ==== LIST ====
 # Transfers the contents of the current working directory
 class FTPCommandList < FTPCommand
-  def initialize(path='.')
+  def initialize(path)
     super()
     @code = 'LIST'
-    @args << ((path.nil? && '.') || path)
+    @args << path unless path.nil?
   end
 
   def do(session)
     begin
-      unless session.dtp && session.dtp.open
+      path = session.make_path(@args)
+
+      if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
         return FTPResponse425.new
       end
 
-      unless session.dtp.send(`ls -l "#{session.cwd}"`.lines[1..-1].join.encode(:crlf_newline => :replace))
+      ret = `ls -l "#{session.sys_path(path)}"`
+      ret = ret.lines[1..-1].join unless ret.length.zero?
+      unless session.dtp.send(ret.encode(:crlf_newline => :replace))
         return FTPResponse.new(426, 'Connection closed; transfer aborted.')
       end
 
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
+
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -139,7 +137,7 @@ class FTPCommandStor < FTPCommand
 
   def do(session)
     begin
-      dest = session.cwd + Pathname.new(@args[0]).basename
+      dest = session.sys_path(session.cwd + Pathname.new(@args[0]).basename)
       session.dtp.open
       data = session.dtp.recv
       File.write(dest, data)
@@ -159,16 +157,16 @@ class FTPCommandRetr < FTPCommand
   def initialize(path=nil)
     super()
     @code = 'RETR'
-    @args << path
+    @args << path unless path.nil?
   end
 
   def do(session)
     begin
-      path = Pathname.new(@args[0])
-      path = (session.cwd + path) if path.relative?
-      raise Exception.new('File does not exist') unless File.exists?(path)
+      path = session.make_path(@args)
+
+      raise Exception.new('File does not exist') unless File.exists?(session.sys_path(path))
       session.dtp.open
-      session.dtp.send(File.binread(path))
+      session.dtp.send(File.binread(session.sys_path(path)))
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
@@ -185,15 +183,15 @@ class FTPCommandDele < FTPCommand
   def initialize(path=nil)
     super()
     @code = 'DELE'
-    @args << path
+    @args << path unless path.nil?
   end
 
   def do(session)
     begin
-      path = Pathname.new(@args[0])
-      path = (session.cwd + path) if path.relative?
-      raise Exception.new('File does not exist') unless File.exists?(path)
-      File.delete(path)
+      path = session.make_path(@args)
+
+      raise Exception.new('File does not exist') unless File.exists?(session.sys_path(path))
+      File.delete(session.sys_path(path))
       FTPResponse250.new("File \"#{path}\" deleted")
     rescue Exception => e
       puts e

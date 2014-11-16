@@ -3,15 +3,17 @@ require 'pathname'
 class DTP
   def initialize(session)
     @session = session
-    @mode = 'A'
-    @bind = '0.0.0.0'
-    @port = 0
+    @mode = nil
+    @bind_ip = nil
+    @port = nil
     @socket = nil
   end
 
   def set_mode(mode)
     @mode = mode if mode == 'A' || mode == 'I'
   end
+
+  def closed?; @socket.nil?; end
 
   def open; raise Exception.new('DTP::open not implemented'); end
   def send; raise Exception.new('DTP::send not implemented'); end
@@ -20,9 +22,11 @@ class DTP
   def close
     begin
       @socket.close unless @socket.nil? || @socket.closed?
+      @socket = nil
+      @port = nil
+      @bind_ip = nil
       true
-    rescue Exception => e
-      puts e, e.backtrace
+    rescue Exception
       false
     end
   end
@@ -32,13 +36,13 @@ end
 class DTPActive < DTP
   def initialize(session, bind, port)
     super(session)
-    @bind = bind
+    @bind_ip = bind
     @port = port
   end
 
   def open
     begin
-      @socket = TCPSocket.new(@bind, @port)
+      @socket = TCPSocket.new(@bind_ip, @port)
       true
     rescue Errno::ECONNREFUSED
       false
@@ -49,8 +53,7 @@ class DTPActive < DTP
     begin
       @socket.write(data)
       true
-    rescue Exception => e
-      puts e, e.backtrace
+    rescue Exception
       false
     end
   end
@@ -60,17 +63,22 @@ end
 class DTPPassive < DTP
   def initialize(session)
     super(session)
-    @socket = TCPServer.new(session.server_ip, 0)
-    @port = @socket.addr[1]
-    @client = nil
+    begin
+      @socket = TCPServer.new(session.server_ip, 0)
+      @bind_ip = session.external_ip
+      @port = @socket.addr[1]
+      @client = nil
+    rescue Exception => e
+      raise e
+    end
   end
 
   def open
     begin
+      return false if closed?
       @client = @socket.accept
       true
-    rescue Exception => e
-      puts e, e.backtrace
+    rescue Exception
       false
     end
   end
@@ -80,8 +88,7 @@ class DTPPassive < DTP
       nb = @client.write(data)
       @client.close
       nb
-    rescue Exception => e
-      puts e, e.backtrace
+    rescue Exception
       false
     end
   end
@@ -91,14 +98,13 @@ class DTPPassive < DTP
       data = @client.read
       @client.close
       data
-    rescue Exception => e
-      puts e, e.backtrace
+    rescue Exception
       nil
     end
   end
 
   def conn_info
-    (@session.server_ip.split('.') << @port / 256 << @port % 256).join(',')
+    (@bind_ip.split('.') << @port / 256 << @port % 256).join(',')
   end
 
 end

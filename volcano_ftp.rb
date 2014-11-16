@@ -12,15 +12,17 @@ class TCPSocket
 end
 
 class VolcanoFTP
-  attr_reader :settings, :session_id
+  attr_reader :settings, :root_dir, :session_id
 
   def initialize(settings)
     @settings = settings
-    @socket = TCPServer.new(@settings[:bind], @settings[:port])
+    @root_dir = Pathname.new(settings[:root_dir]).realpath
+    ENV['HOME'] = '/'
+    @socket = TCPServer.new(@settings[:bind_ip], @settings[:port])
     @sessions = []
     @session_id = 0
     @inactive_time = Time.new(0)
-    VolcanoLog.log("Starting VolcanoFTP. [PID=#{Process.pid}]")
+    VolcanoLog.log("Starting VolcanoFTP. [Root dir: '#{root_dir}'] [PID: #{Process.pid}]")
   end
 
   def refresh_sessions
@@ -30,7 +32,7 @@ class VolcanoFTP
   end
 
   def run
-    VolcanoLog.log("Bound to address #{@settings[:bind]}, listening on port #{@settings[:port]}")
+    VolcanoLog.log("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
 
     begin
       while 1
@@ -56,9 +58,11 @@ class VolcanoFTP
 end
 
 begin
-  VolcanoFTP.new(VolcanoConfigurator.new.settings).run
+  VolcanoFTP.new(VolcanoSettings.new.to_h).run
+rescue SystemExit
+  ;
 rescue SocketError, Errno::EADDRINUSE, Errno::EADDRNOTAVAIL => e
   puts e, e.backtrace
 rescue Exception => e
-  VolcanoLog.log("Uncaught exception : #{e}")
+  VolcanoLog.log("Uncaught exception: #{e.class} '#{e}'")
 end

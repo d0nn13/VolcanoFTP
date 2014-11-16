@@ -5,33 +5,35 @@ require_relative 'ftp_response'
 
 
 class VolcanoSession
-  attr_reader :root_dir, :server_ip, :external_ip, :client, :authentication, :cwd, :ph, :dtp
+  attr_reader :id, :server_ip, :external_ip, :authentication, :cwd, :ph, :dtp
 
-  def initialize(server, client)
-    VolcanoLog.log_pid(Process.pid, "Process spawn for session n° #{server.session_id}")
-    @id = server.session_id
-    @root_dir = server.root_dir
+  def initialize(server, id, client)
+    @id = id
     @server_ip = server.settings[:bind_ip]
     @external_ip = server.settings[:external_ip]
-    @client = client
-    @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
-    @cwd = Pathname.new('/')
+    @root_dir = server.settings[:root_dir]
 
-    @ph = ProtocolHandler.new(self)
-    @ph.send_response(FTPResponseGreet.new)
+    @cwd = Pathname.new('/')
+    @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
+
+    @client = client
+    @ph = ProtocolHandler.new(client)
     @dtp = nil
   end
 
   def launch
+    VolcanoLog.log_pid(Process.pid, "Process spawn for session n° #{@id}")
+    @ph.send_response(FTPResponseGreet.new)
+
     begin
       while 1
         command = @ph.read_command(@client.readline)
         unless command.nil?
           @ph.send_response(command.do(self))
-
           raise EOFError if command.is_a?(FTPCommandQuit)
         end
       end
+
     rescue SystemExit, Interrupt
       msg = "Terminating session n° #{@id}"
       VolcanoLog.log_pid(Process.pid, msg)
@@ -69,7 +71,7 @@ class VolcanoSession
     if args.length.zero?
       path = @cwd
     else
-      path = Pathname.new(args[0]).expand_path(@cwd)   # TODO: handle ArgmentError: user xxx~ doesn't exist
+      path = Pathname.new(args[0]).expand_path(@cwd)   # TODO: handle ArgumentError: user xxx~ doesn't exist
     end
     path
   end
@@ -81,7 +83,6 @@ class VolcanoSession
   # Handle user authentication (USER|PASS)
   def user_authentication(user, pass=nil)
     unless user.nil?
-
       # handle user name (exists?)
     end
 

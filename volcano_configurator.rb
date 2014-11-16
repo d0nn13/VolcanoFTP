@@ -22,8 +22,11 @@ class VolcanoSettings
     @port = VOLCANO_DEFAULT_PORT
     @root_dir = Pathname.new(Dir.home)
     @accept_anon = true
+
+    @set_external = false
     config_from_file
     config_from_cli
+    @external_ip = @bind_ip unless @set_external
   end
 
   def to_h
@@ -37,6 +40,7 @@ class VolcanoSettings
 
   def set_external_ip(ip)
     @external_ip = ip
+    @set_external = true
   end
 
   def set_port(port)
@@ -81,6 +85,9 @@ class VolcanoSettings
 
         opts.on('-b', '--bind HOSTNAME_OR_IP') { |bind|
           set_bind_ip(bind)
+        }
+        opts.on('-e', '--external HOSTNAME_OR_IP') { |ip|
+          set_external_ip(ip)
         }
         opts.on('-p', '--port PORT') { |port|
           set_port(port.to_i)

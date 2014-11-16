@@ -3,8 +3,8 @@ require_relative 'ftp_command'
 require_relative 'ftp_response'
 
 class ProtocolHandler
-  def initialize(session)
-    @client = session.client
+  def initialize(client)
+    @client = client
 
     @commands = {
         PWD: {obj: FTPCommandPwd, pattern: /^PWD\s*$/i},

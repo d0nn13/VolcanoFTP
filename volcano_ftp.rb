@@ -2,7 +2,7 @@
 
 require 'socket'
 require_relative 'volcano_log'
-require_relative 'volcano_configurator'
+require_relative 'volcano_settings'
 require_relative 'volcano_session'
 
 class TCPSocket

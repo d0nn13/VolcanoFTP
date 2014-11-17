@@ -1,3 +1,10 @@
+class FTP400 < StandardError; end
+class FTP425 < FTP400; end
+class FTP426 < FTP400; end
+
+class FTP500 < StandardError; end
+class FTP550 < FTP500; end
+
 class FTPResponse
   def initialize(code, message)
     @code = code

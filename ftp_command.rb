@@ -37,11 +37,11 @@ class FTPCommandCwd < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      unless Dir.exists?(session.sys_path(path))
-        return FTPResponse.new(550, 'CWD command failed')
-      end
+      raise FTP550 unless Dir.exists?(session.sys_path(path))
       session.set_cwd(path)
       FTPResponse250.new("Directory changed to #{path}")
+
+    rescue FTP550; FTPResponse.new(550, 'CWD command failed')
     rescue Exception => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
@@ -102,20 +102,17 @@ class FTPCommandList < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
-        return FTPResponse425.new
-      end
-
+      raise FTP425 if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
       ret = `ls -l "#{session.sys_path(path)}"`
       ret = ret.lines[1..-1].join unless ret.length.zero?
-      unless session.dtp.send(ret.encode(:crlf_newline => :replace))
-        return FTPResponse.new(426, 'Connection closed; transfer aborted.')
-      end
+      raise FTP426 unless session.dtp.send(ret.encode(:crlf_newline => :replace))
 
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue FTP425; FTPResponse425.new
+    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue Exception => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
@@ -135,12 +132,16 @@ class FTPCommandStor < FTPCommand
   def do(session)
     begin
       dest = session.cwd + Pathname.new(@args[0]).basename
-      session.dtp.open
+      raise FTP425 unless session.dtp.open
       data = session.dtp.recv
+      raise FTP426 if data.nil?
       File.write(session.sys_path(dest), data)
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
+
+    rescue FTP425; FTPResponse425.new
+    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue Exception => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
@@ -161,11 +162,14 @@ class FTPCommandRetr < FTPCommand
     begin
       path = session.make_path(@args)
       raise Exception.new('File does not exist') unless File.exists?(session.sys_path(path))
-      session.dtp.open
-      session.dtp.send(File.binread(session.sys_path(path)))
+      raise FTP425 unless session.dtp.open
+      raise FTP426 unless session.dtp.send(File.binread(session.sys_path(path)))
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
+
+    rescue FTP425; FTPResponse425.new
+    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue Exception => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
@@ -185,9 +189,11 @@ class FTPCommandDele < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      raise Exception.new('File does not exist') unless File.exists?(session.sys_path(path))
+      raise FTP550 unless File.exists?(session.sys_path(path))
       File.delete(session.sys_path(path))
       FTPResponse250.new("File \"#{path}\" deleted")
+
+    rescue FTP550; FTPResponse.new(550, 'DELE command failed')
     rescue Exception => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new

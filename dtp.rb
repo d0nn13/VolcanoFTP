@@ -32,7 +32,6 @@ class DTP
   end
 end
 
-
 class DTPActive < DTP
   def initialize(session, bind, port)
     super(session)
@@ -44,8 +43,7 @@ class DTPActive < DTP
     begin
       @socket = TCPSocket.new(@bind_ip, @port)
       true
-    rescue Errno::ECONNREFUSED
-      false
+    rescue Errno::ECONNREFUSED; false
     end
   end
 
@@ -53,8 +51,7 @@ class DTPActive < DTP
     begin
       @socket.write(data)
       true
-    rescue Exception
-      false
+    rescue ; false
     end
   end
 end
@@ -68,8 +65,7 @@ class DTPPassive < DTP
       @bind_ip = session.external_ip
       @port = @socket.addr[1]
       @client = nil
-    rescue Exception => e
-      raise e
+    rescue => e; raise e
     end
   end
 
@@ -78,8 +74,7 @@ class DTPPassive < DTP
       return false if closed?
       @client = @socket.accept
       true
-    rescue Exception
-      false
+    rescue; false
     end
   end
 
@@ -88,8 +83,7 @@ class DTPPassive < DTP
       nb = @client.write(data)
       @client.close
       nb
-    rescue Exception
-      false
+    rescue; false
     end
   end
 
@@ -98,13 +92,11 @@ class DTPPassive < DTP
       data = @client.read
       @client.close
       data
-    rescue Exception
-      nil
+    rescue; nil
     end
   end
 
   def conn_info
     (@bind_ip.split('.') << @port / 256 << @port % 256).join(',')
   end
-
 end

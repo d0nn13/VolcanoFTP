@@ -1,3 +1,5 @@
-bind            : "localhost"
+bind_ip         : "localhost"
+external_ip     : "localhost"
 port            : 4000
+root_dir        : "~"
 accept_anon     : true

@@ -5,7 +5,6 @@ require_relative 'ftp_response'
 class ProtocolHandler
   def initialize(client)
     @client = client
-
     @commands = {
         PWD: {obj: FTPCommandPwd, pattern: /^PWD\s*$/i},
         CWD: {obj: FTPCommandCwd, pattern: /^CWD(\s+(?<args>.+))?\s*$/i},
@@ -43,7 +42,6 @@ class ProtocolHandler
     else
       VolcanoLogSuccess.log_pid(Process.pid, "PI: Command\t<#{command}> OK (:")
     end
-
     command
   end
 

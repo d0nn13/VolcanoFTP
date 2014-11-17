@@ -8,15 +8,14 @@ class FTPCommand
     @args = []
   end
 
-  def to_s; "#{@code} #{@args}"; end
-
   def do(session); FTPResponse502.new; end
+  def to_s; "#{@code} #{@args}"; end
 end
 
 # ==== PWD ====
 # Transfers the current working directory name
 class FTPCommandPwd < FTPCommand
-  def initialize(arg=nil)
+  def initialize(arg)
     super()
     @code = 'PWD'
   end
@@ -29,7 +28,7 @@ end
 # ==== CWD ====
 # Change the server's working directory (CWD) for the current session
 class FTPCommandCwd < FTPCommand
-  def initialize(path=nil)
+  def initialize(path)
     super()
     @code = 'CWD'
     @args << path unless path.nil?
@@ -38,7 +37,6 @@ class FTPCommandCwd < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-
       unless Dir.exists?(session.sys_path(path))
         return FTPResponse.new(550, 'CWD command failed')
       end
@@ -54,7 +52,7 @@ end
 # ==== PASV ====
 # Activates the DTP's passive mode
 class FTPCommandPasv < FTPCommand
-  def initialize(arg=nil)
+  def initialize(arg)
     super()
     @code = 'PASV'
   end
@@ -73,7 +71,7 @@ end
 # ==== PORT ====
 # Activates the DTP's active mode
 class FTPCommandPort < FTPCommand
-  def initialize(port=nil)
+  def initialize(port)
     super()
     @code = 'PORT'
     @args << port.gsub(/\s/, '')  # remove spaces
@@ -86,7 +84,7 @@ class FTPCommandPort < FTPCommand
       session.set_dtp(DTPActive.new(session, bind, port))
       FTPResponse200.new('Entered active mode')
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -104,7 +102,6 @@ class FTPCommandList < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-
       if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
         return FTPResponse425.new
       end
@@ -129,7 +126,7 @@ end
 # ==== STOR ====
 # Transfers file from client to server
 class FTPCommandStor < FTPCommand
-  def initialize(path=nil)
+  def initialize(path)
     super()
     @code = 'STOR'
     @args << path
@@ -137,15 +134,15 @@ class FTPCommandStor < FTPCommand
 
   def do(session)
     begin
-      dest = session.sys_path(session.cwd + Pathname.new(@args[0]).basename)
+      dest = session.cwd + Pathname.new(@args[0]).basename
       session.dtp.open
       data = session.dtp.recv
-      File.write(dest, data)
+      File.write(session.sys_path(dest), data)
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -154,7 +151,7 @@ end
 # ==== RETR ====
 # Transfers file from server to client
 class FTPCommandRetr < FTPCommand
-  def initialize(path=nil)
+  def initialize(path)
     super()
     @code = 'RETR'
     @args << path unless path.nil?
@@ -163,7 +160,6 @@ class FTPCommandRetr < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-
       raise Exception.new('File does not exist') unless File.exists?(session.sys_path(path))
       session.dtp.open
       session.dtp.send(File.binread(session.sys_path(path)))
@@ -171,7 +167,7 @@ class FTPCommandRetr < FTPCommand
       session.dtp.close
       FTPResponse.new(226, 'Closing data connection.')
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -180,7 +176,7 @@ end
 # ==== DELE ====
 # Deletes server file
 class FTPCommandDele < FTPCommand
-  def initialize(path=nil)
+  def initialize(path)
     super()
     @code = 'DELE'
     @args << path unless path.nil?
@@ -189,12 +185,11 @@ class FTPCommandDele < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-
       raise Exception.new('File does not exist') unless File.exists?(session.sys_path(path))
       File.delete(session.sys_path(path))
       FTPResponse250.new("File \"#{path}\" deleted")
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -203,7 +198,7 @@ end
 # ==== SYST ====
 # Transfers the system type to the client
 class FTPCommandSyst < FTPCommand
-  def initialize(arg=nil)
+  def initialize(arg)
     super()
     @code = 'SYST'
   end
@@ -216,7 +211,7 @@ end
 # ==== FEAT ====
 # Transmit feature list
 class FTPCommandFeat < FTPCommand
-  def initialize(arg=nil)
+  def initialize(arg)
     super()
     @code = 'FEAT'
   end
@@ -229,7 +224,7 @@ end
 # ==== TYPE ====
 # Sets the transfert mode
 class FTPCommandType < FTPCommand
-  def initialize(arg=nil)
+  def initialize(arg)
     super()
     @code = 'TYPE'
   end
@@ -254,7 +249,7 @@ class FTPCommandUser < FTPCommand
       # session.server_user_login(@args[0].to_s, nil)
       FTPResponse.new(230, "User '#{@args[0]}' accepted")
     rescue Exception => e
-      puts e
+      puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
     end
   end
@@ -278,7 +273,7 @@ end
 # ==== QUIT ====
 # Terminates the client's session
 class FTPCommandQuit < FTPCommand
-  def initialize(arg=nil)
+  def initialize(arg)
     super()
     @code = 'QUIT'
   end

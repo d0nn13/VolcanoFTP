@@ -5,7 +5,7 @@ require_relative 'ftp_response'
 
 
 class VolcanoSession
-  attr_reader :id, :server_ip, :external_ip, :authentication, :cwd, :ph, :dtp
+  attr_reader :id, :server_ip, :external_ip, :mode, :authentication, :cwd, :ph, :dtp
 
   def initialize(server, id, client)
     @id = id
@@ -14,6 +14,7 @@ class VolcanoSession
     @root_dir = server.settings[:root_dir]
 
     @cwd = Pathname.new('/')
+    @mode = 'A'
     @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
 
     @client = client
@@ -52,6 +53,10 @@ class VolcanoSession
   def set_cwd(path)
     unless path.is_a?(Pathname); raise Exception.new('Not a Pathname'); end
     @cwd = path
+  end
+
+  def set_mode(mode)
+    p @mode = mode if mode.match(/^A|B|I|L$/)
   end
 
   def set_dtp(dtp)

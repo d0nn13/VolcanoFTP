@@ -11,6 +11,7 @@ class ProtocolHandler
         PASV: {obj: FTPCommandPasv, pattern: /^PASV\s*$/i},
         PORT: {obj: FTPCommandPort, pattern: /^PORT\s+(?<args>(\d{1,3},\s?){5}\d{1,3})\s*$/i},
         LIST: {obj: FTPCommandList, pattern: /^LIST(\s+(?<args>.+))?\s*$/i},
+        NLST: {obj: FTPCommandNlst, pattern: /^NLST(\s+(?<args>.+))?\s*$/i},
         STOR: {obj: FTPCommandStor, pattern: /^STOR\s+(?<args>.+)\s*$/i},
         RETR: {obj: FTPCommandRetr, pattern: /^RETR\s+(?<args>.+)\s*$/i},
         DELE: {obj: FTPCommandDele, pattern: /^DELE\s+(?<args>.+)\s*$/i},

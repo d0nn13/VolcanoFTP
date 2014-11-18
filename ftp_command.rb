@@ -126,6 +126,42 @@ class FTPCommandList < FTPCommand
   end
 end
 
+# ==== NLST ====
+# Transfers the namelist of the current working directory
+class FTPCommandNlst < FTPCommand
+  def initialize(path)
+    super()
+    @code = 'NLST'
+    @args << path unless path.nil?
+  end
+
+  def do(session)
+    begin
+      if @args.length.zero? == false && @args[0].match(/^-/)
+        ls_args = @args[0]
+        path = session.cwd
+      else
+        ls_args = ''
+        path = session.make_path(@args)
+      end
+      syscall = "ls #{ls_args} '#{session.sys_path(path)}'"
+      raise FTP425 if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
+
+      ret = `#{syscall}`
+
+      session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
+      raise FTP426 unless session.dtp.send(ret)
+      FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
+
+    rescue FTP425; session.dtp.close; FTPResponse425.new
+    rescue FTP426; session.dtp.close; FTPResponse.new(426, 'Connection closed; transfer aborted.')
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    end
+  end
+end
+
 # ==== STOR ====
 # Transfers file from client to server
 class FTPCommandStor < FTPCommand

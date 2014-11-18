@@ -1,16 +1,15 @@
 require 'pathname'
 
 class DTP
-  def initialize(session)
-    @session = session
-    @mode = nil
+  def initialize
+    @mode = 'A'
     @bind_ip = nil
     @port = nil
     @socket = nil
   end
 
   def set_mode(mode)
-    @mode = mode if mode == 'A' || mode == 'I'
+    @mode = mode if mode.match(/^A|B|I|L$/)
   end
 
   def closed?; @socket.nil?; end
@@ -26,15 +25,75 @@ class DTP
       @port = nil
       @bind_ip = nil
       true
-    rescue Exception
-      false
+    rescue => e; puts "#{self.class}::close> #{e.class}: '#{e}'"; false
     end
   end
 end
 
+class DTPPassive < DTP
+  def initialize(external_ip)
+    super()
+    begin
+      @socket = TCPServer.new(0)
+      @bind_ip = external_ip
+      @port = @socket.addr[1]
+      @client = nil
+    rescue => e; raise e;
+    end
+  end
+
+  def open
+    begin
+      @client = @socket.accept
+      true
+    rescue => e; puts "#{self.class}::open> #{e.class}: '#{e}'"; false
+    end
+  end
+
+  def send(data)
+    begin
+      raise 'Client socket closed' if @client.nil?
+      raise 'Timeout' if select(nil, [@client], nil, 20).nil?
+      case @mode
+        when 'I'; nb = @client.write(data)
+        else; nb = @client.write(data.encode(:crlf_newline => :replace))
+      end
+      @client.close
+      nb
+    rescue => e; puts "#{self.class}::send> #{e.class}: '#{e}'"; false
+    end
+  end
+
+  def recv #TODO: handle modes
+    begin
+      raise 'Client socket closed' if @client.nil?
+      raise 'Timeout' if select([@client], nil, nil, 20).nil?
+      @client.read
+    rescue => e; puts "#{self.class}::recv> #{e.class}: '#{e}'"; nil
+    end
+  end
+
+  def close
+    begin
+      @socket.close unless @socket.nil? || @socket.closed?
+      @client.close unless @client.nil? || @client.closed?
+      @socket = nil
+      @client = nil
+      @port = nil
+      @bind_ip = nil
+      true
+    rescue => e; puts "#{self.class}::close> #{e.class}: '#{e}'"; false
+    end
+  end
+
+  def conn_info
+    (@bind_ip.split('.') << @port / 256 << @port % 256).join(',')
+  end
+end
+
 class DTPActive < DTP
-  def initialize(session, bind, port)
-    super(session)
+  def initialize(bind, port)
+    super()
     @bind_ip = bind
     @port = port
   end
@@ -43,60 +102,29 @@ class DTPActive < DTP
     begin
       @socket = TCPSocket.new(@bind_ip, @port)
       true
-    rescue Errno::ECONNREFUSED; false
+    rescue => e; puts "#{self.class}::open> #{e.class}: '#{e}'"; false
     end
   end
 
   def send(data)
     begin
-      @socket.write(data)
-      true
-    rescue ; false
-    end
-  end
-end
-
-
-class DTPPassive < DTP
-  def initialize(session)
-    super(session)
-    begin
-      @socket = TCPServer.new(session.server_ip, 0)
-      @bind_ip = session.external_ip
-      @port = @socket.addr[1]
-      @client = nil
-    rescue => e; raise e
-    end
-  end
-
-  def open
-    begin
-      return false if closed?
-      @client = @socket.accept
-      true
-    rescue; false
-    end
-  end
-
-  def send(data)
-    begin
-      nb = @client.write(data)
-      @client.close
+      raise 'Client socket closed' if @socket.nil?
+      raise 'Timeout' if select(nil, [@socket], nil, 20).nil?
+      case @mode
+        when 'I'; nb = @socket.write(data)
+        else; nb = @socket.write(data.encode(:crlf_newline => :replace))
+      end
       nb
-    rescue; false
+    rescue => e; puts "#{self.class}::send> #{e.class}: '#{e}'"; false
     end
   end
 
   def recv
     begin
-      data = @client.read
-      @client.close
-      data
-    rescue; nil
+      raise 'Client socket closed' if @socket.nil?
+      raise 'Timeout' if select(nil, [@socket], nil, 20).nil?
+      @socket.read
+    rescue => e; puts "#{self.class}::recv> #{e.class}: '#{e}'"; nil
     end
-  end
-
-  def conn_info
-    (@bind_ip.split('.') << @port / 256 << @port % 256).join(',')
   end
 end

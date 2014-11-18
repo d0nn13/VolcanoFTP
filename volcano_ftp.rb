@@ -4,6 +4,7 @@ require 'socket'
 require_relative 'volcano_log'
 require_relative 'volcano_settings'
 require_relative 'volcano_session'
+include Socket::Constants
 
 class TCPSocket
   def to_s

@@ -52,11 +52,11 @@ class VolcanoSettings
   end
 
   def set_root_dir(path)
-    path = Pathname.new((path == '~') && Dir.home || path).realpath
-    if Dir.exists?(path)
-      @root_dir = path
+    root = Pathname.new(path).expand_path
+    if Dir.exists?(root)
+      @root_dir = root
     else
-      VolcanoLog.log("Directory '#{path}' does not exists")
+      VolcanoLog.log("Directory '#{root}' does not exists, falling back to default value.")
     end
   end
 
@@ -72,8 +72,8 @@ class VolcanoSettings
       set_port(cfg['port']) if cfg.keys.include?('port')
       set_root_dir(cfg['root_dir']) if cfg.keys.include?('root_dir')
       set_accept_anon(cfg['accept_anon']) if cfg.keys.include?('accept_anon')
-    rescue Exception => e
-      VolcanoLog.log(e)
+    rescue => e
+      VolcanoLog.log(e.to_s)
       exit(1)
     end
   end

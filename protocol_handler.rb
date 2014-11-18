@@ -16,7 +16,7 @@ class ProtocolHandler
         DELE: {obj: FTPCommandDele, pattern: /^DELE\s+(?<args>.+)\s*$/i},
         SYST: {obj: FTPCommandSyst, pattern: /^SYST\s*$/i},
         FEAT: {obj: FTPCommandFeat, pattern: /^FEAT\s*$/i},
-        TYPE: {obj: FTPCommandType, pattern: /^TYPE\s+(?<args>A|B|I|L\s+\d{0,2})\s*$/i},
+        TYPE: {obj: FTPCommandType, pattern: /^TYPE\s+(?<args>(A|B|I)|(L\s+\d{0,2}))\s*$/i},
         USER: {obj: FTPCommandUser, pattern: /^USER\s+(?<args>.+)\s*$/i},
         PASS: {obj: FTPCommandPass, pattern: /^PASS(\s+(?<args>.+))?\s*$/i},
         QUIT: {obj: FTPCommandQuit, pattern: /^QUIT\s*$/i}
@@ -25,31 +25,33 @@ class ProtocolHandler
 
   # Reads raw data and returns a FTPCommand
   def read_command(cmd_str)
-    command = nil
-    @commands.each_value { |cmd|
-      if cmd[:obj].nil?; next; end
-      match = cmd[:pattern].match(cmd_str.chomp)
-      unless match.nil?
-        args = match.names.include?('args') && match[:args] || nil
-        command = cmd[:obj].new(args)
-        break
-      end
-    }
+    begin
+      command = nil
+      @commands.each_value { |cmd|
+        if cmd[:obj].nil?; next; end
+        match = cmd[:pattern].match(cmd_str.chomp)
+        unless match.nil?
+          args = match.names.include?('args') && match[:args] || nil
+          command = cmd[:obj].new(args)
+          break
+        end
+      }
+      raise if command.nil?
+      VolcanoLog.log("PI: Command\t<#{command}> OK (:", Process.pid, LOG_SUCCESS)
+      command
 
-    if command.nil?
-      VolcanoLogError.log_pid(Process.pid, "PI: Command\t<#{cmd_str.strip}> NOK ):")
+    rescue RuntimeError
+      VolcanoLog.log("PI: Command\t<#{cmd_str.strip}> NOK ):", Process.pid, LOG_ERROR)
       send_response(FTPResponse500.new("'#{cmd_str.strip}': command not understood"))
-    else
-      VolcanoLogSuccess.log_pid(Process.pid, "PI: Command\t<#{command}> OK (:")
+      nil
     end
-    command
   end
 
   # Send a response to the client
   def send_response(response)
     if response.is_a?(FTPResponse)
       @client.puts(response)
-      VolcanoLogInfo.log_pid(Process.pid, "PI: Response\t<#{response}>")
+      VolcanoLog.log("PI: Response\t<#{response}>", Process.pid, LOG_INFO)
     end
   end
 end

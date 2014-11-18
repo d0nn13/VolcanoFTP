@@ -48,7 +48,7 @@ class FTPResponse502 < FTPResponse
 end
 
 class FTPResponseSystem < FTPResponse
-  def initialize(message='UNIX')
+  def initialize(message='UNIX Type: L8')
     super(215, message)
   end
 end

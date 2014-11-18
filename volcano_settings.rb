@@ -16,36 +16,37 @@ VOLCANO_DEFAULT_PORT = 4242
 VOLCANO_CONFIG_FILE_PATH = './config.yml'
 
 class VolcanoSettings
+  attr_reader :settings
+
   def initialize
-    @bind_ip = VOLCANO_DEFAULT_BIND
-    @external_ip = VOLCANO_DEFAULT_BIND
-    @port = VOLCANO_DEFAULT_PORT
-    @root_dir = Pathname.new(Dir.home)
-    @accept_anon = true
+    @settings = {
+        bind_ip: VOLCANO_DEFAULT_BIND,
+        external_ip: VOLCANO_DEFAULT_BIND,
+        port: VOLCANO_DEFAULT_PORT,
+        root_dir: Pathname.new(Dir.home),
+        accept_anon: true
+    }
 
     @set_external = false
     config_from_file
     config_from_cli
-    @external_ip = @bind_ip unless @set_external
-  end
-
-  def to_h
-    {bind_ip: @bind_ip, external_ip: @external_ip, port: @port, root_dir: @root_dir, accept_anon: @accept_anon}
+    @external_ip = @settings[:bind_ip] unless @set_external
+    @settings.freeze
   end
 
   private
   def set_bind_ip(bind)
-    @bind_ip = bind
+    @settings[:bind_ip] = bind
   end
 
   def set_external_ip(ip)
-    @external_ip = ip
+    @settings[:external_ip] = ip
     @set_external = true
   end
 
   def set_port(port)
     if port.to_i >= VOLCANO_MIN_PORT && port.to_i <= VOLCANO_MAX_PORT
-      @port = port.to_i
+      @settings[:port] = port.to_i
     else
       VolcanoLog.log("Ignoring bad value '#{port}'")
     end
@@ -54,14 +55,14 @@ class VolcanoSettings
   def set_root_dir(path)
     root = Pathname.new(path).expand_path
     if Dir.exists?(root)
-      @root_dir = root
+      @settings[:root_dir] = root
     else
       VolcanoLog.log("Directory '#{root}' does not exists, falling back to default value.")
     end
   end
 
   def set_accept_anon(accept)
-    @accept_anon = accept
+    @settings[:accept_anon] = accept
   end
 
   def config_from_file

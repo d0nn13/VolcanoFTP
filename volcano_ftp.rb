@@ -4,7 +4,6 @@ require 'socket'
 require_relative 'volcano_log'
 require_relative 'volcano_settings'
 require_relative 'volcano_session'
-include Socket::Constants
 
 class TCPSocket
   def to_s
@@ -17,7 +16,7 @@ class VolcanoFTP
 
   def initialize(settings)
     ENV['HOME'] = '/'
-    @settings = settings
+    @settings = settings.settings
     @socket = TCPServer.new(@settings[:bind_ip], @settings[:port])
     @sessions = {}
     @inactive_time = Time.new(0)
@@ -60,7 +59,7 @@ class VolcanoFTP
 end
 
 begin
-  VolcanoFTP.new(VolcanoSettings.new.to_h).run
+  VolcanoFTP.new(VolcanoSettings.new).run
 rescue SystemExit
   ;
 rescue SocketError, Errno::EADDRINUSE, Errno::EADDRNOTAVAIL => e

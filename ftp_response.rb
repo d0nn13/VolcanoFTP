@@ -55,11 +55,7 @@ end
 
 class FTPResponseFeatures < FTPResponse
   def initialize(message='UNIX')
-    super(211, "-Exensions supported:\r\n UTF8\r\n211 End")
-  end
-
-  def to_s
-    "#{@code.to_s}#{@message}"
+    super(211, 'No special features :)')
   end
 end
 

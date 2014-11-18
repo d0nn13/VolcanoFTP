@@ -2,15 +2,12 @@ require 'pathname'
 
 class DTP
   def initialize
-    @mode = 'A'
     @bind_ip = nil
     @port = nil
     @socket = nil
   end
 
-  def set_mode(mode)
-    @mode = mode if mode.match(/^A|B|I|L$/)
-  end
+
 
   def closed?; @socket.nil?; end
 
@@ -50,11 +47,11 @@ class DTPPassive < DTP
     end
   end
 
-  def send(data)
+  def send(mode, data)
     begin
       raise 'Client socket closed' if @client.nil?
       raise 'Timeout' if select(nil, [@client], nil, 20).nil?
-      case @mode
+      case mode
         when 'I'; nb = @client.write(data)
         else; nb = @client.write(data.encode(:crlf_newline => :replace))
       end
@@ -106,11 +103,11 @@ class DTPActive < DTP
     end
   end
 
-  def send(data)
+  def send(mode, data)
     begin
       raise 'Client socket closed' if @socket.nil?
       raise 'Timeout' if select(nil, [@socket], nil, 20).nil?
-      case @mode
+      case mode
         when 'I'; nb = @socket.write(data)
         else; nb = @socket.write(data.encode(:crlf_newline => :replace))
       end

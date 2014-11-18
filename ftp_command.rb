@@ -114,7 +114,7 @@ class FTPCommandList < FTPCommand
       ret = `#{syscall}`
 
       session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
-      raise FTP426 unless session.dtp.send(ret)
+      raise FTP426 unless session.dtp.send(session.mode, ret)
       FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
 
     rescue FTP425; session.dtp.close; FTPResponse425.new
@@ -150,7 +150,7 @@ class FTPCommandNlst < FTPCommand
       ret = `#{syscall}`
 
       session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
-      raise FTP426 unless session.dtp.send(ret)
+      raise FTP426 unless session.dtp.send(session.mode, ret)
       FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
 
     rescue FTP425; session.dtp.close; FTPResponse425.new
@@ -175,7 +175,8 @@ class FTPCommandStor < FTPCommand
     begin
       dest = session.cwd + Pathname.new(@args[0]).basename
       raise FTP425 unless session.dtp.open
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.')) # TODO: if can write!!
+      raise FTP550 unless FileTest.writable?(session.sys_path(dest).dirname)
+      session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
       data = session.dtp.recv
       raise FTP426 if data.nil? || data.length.zero?
@@ -183,6 +184,7 @@ class FTPCommandStor < FTPCommand
       File.write(session.sys_path(dest), data)
       FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
 
+    rescue FTP550; session.dtp.close; FTPResponse(550, 'Destination dir not writable')
     rescue FTP425; session.dtp.close; FTPResponse425.new
     rescue FTP426; session.dtp.close; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
@@ -204,14 +206,14 @@ class FTPCommandRetr < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      raise 'File does not exist' unless File.exists?(session.sys_path(path)) # TODO: real ftp error
+      raise FTP550 unless File.exists?(session.sys_path(path))
       raise FTP425 unless session.dtp.open
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.')) # TODO: if can read!!
+      session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
-      raise FTP426 unless session.dtp.send(File.binread(session.sys_path(path)))
-
+      raise FTP426 unless session.dtp.send(session.mode, File.binread(session.sys_path(path)))
       FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
 
+    rescue FTP550; session.dtp.close; FTPResponse.new(550, "File #{path} does not exist")
     rescue FTP425; session.dtp.close; FTPResponse425.new
     rescue FTP426; session.dtp.close; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
@@ -281,6 +283,7 @@ class FTPCommandType < FTPCommand
   end
 
   def do(session)
+    session.set_mode(@args[0]) unless @args.length.zero?
     FTPResponse200.new
   end
 end

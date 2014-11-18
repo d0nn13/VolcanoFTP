@@ -50,7 +50,7 @@ class FTPCommandCwd < FTPCommand
 end
 
 # ==== PASV ====
-# Activates the DTP's passive mode
+# Activates the DTP passive mode
 class FTPCommandPasv < FTPCommand
   def initialize(arg)
     super()
@@ -59,7 +59,7 @@ class FTPCommandPasv < FTPCommand
 
   def do(session)
     begin
-      session.set_dtp(DTPPassive.new(session.external_ip))
+      session.set_dtp(DTPPassive.new(session.settings[:external_ip]))
       FTPResponse.new(227, "Entering passive mode (#{session.dtp.conn_info})")
     rescue => e
       puts self.class, e.class, e, e.backtrace
@@ -69,7 +69,7 @@ class FTPCommandPasv < FTPCommand
 end
 
 # ==== PORT ====
-# Activates the DTP's active mode
+# Activates the DTP active mode
 class FTPCommandPort < FTPCommand
   def initialize(port)
     super()
@@ -127,7 +127,7 @@ class FTPCommandList < FTPCommand
 end
 
 # ==== NLST ====
-# Transfers the namelist of the current working directory
+# Transfers the name list of the current working directory
 class FTPCommandNlst < FTPCommand
   def initialize(path)
     super()
@@ -274,7 +274,7 @@ class FTPCommandFeat < FTPCommand
 end
 
 # ==== TYPE ====
-# Sets the transfert mode
+# Sets the transfer mode
 class FTPCommandType < FTPCommand
   def initialize(arg)
     super()

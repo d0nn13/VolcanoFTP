@@ -5,21 +5,19 @@ require_relative 'ftp_response'
 
 
 class VolcanoSession
-  attr_reader :id, :server_ip, :external_ip, :mode, :authentication, :cwd, :ph, :dtp
+  attr_reader :id, :settings, :cwd, :mode, :authentication, :ph, :dtp
 
   def initialize(server, id, client)
     @id = id
-    @server_ip = server.settings[:bind_ip]
-    @external_ip = server.settings[:external_ip]
-    @root_dir = server.settings[:root_dir]
+    @settings = server.settings
+
+    @client = client
+    @ph = ProtocolHandler.new(@client)
+    @dtp = nil
 
     @cwd = Pathname.new('/')
     @mode = 'A'
     @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
-
-    @client = client
-    @ph = ProtocolHandler.new(client)
-    @dtp = nil
   end
 
   def launch
@@ -51,16 +49,17 @@ class VolcanoSession
   end
 
   def set_cwd(path)
-    unless path.is_a?(Pathname); raise Exception.new('Not a Pathname'); end
+    unless path.is_a?(Pathname); raise TypeError.new('Not a Pathname'); end
     @cwd = path
   end
 
   def set_mode(mode)
-    p @mode = mode if mode.match(/^A|B|I|L$/)
+    raise ArgumentError.new('Wrong mode') unless mode.match(/^A|B|I|L$/)
+    @mode = mode
   end
 
   def set_dtp(dtp)
-    unless dtp.is_a?(DTP); raise Exception.new('Not a DTP'); end
+    unless dtp.is_a?(DTP); raise TypeError.new('Not a DTP'); end
     @dtp = dtp
     true
   end
@@ -82,7 +81,7 @@ class VolcanoSession
   end
 
   def sys_path(path)
-    path.sub('/', @root_dir.to_s + '/')
+    path.sub('/', settings[:root_dir].to_s + '/')
   end
 
   # Handle user authentication (USER|PASS)

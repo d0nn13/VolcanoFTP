@@ -115,13 +115,14 @@ class FTPCommandList < FTPCommand
 
       session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
       raise FTP426 unless session.dtp.send(session.mode, ret)
-      FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
+      FTPResponse.new(226, 'Closing data connection.')
 
-    rescue FTP425; session.dtp.close; FTPResponse425.new
-    rescue FTP426; session.dtp.close; FTPResponse.new(426, 'Connection closed; transfer aborted.')
+    rescue FTP425; FTPResponse425.new
+    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure; session.dtp.close
     end
   end
 end
@@ -151,13 +152,14 @@ class FTPCommandNlst < FTPCommand
 
       session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
       raise FTP426 unless session.dtp.send(session.mode, ret)
-      FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
+      FTPResponse.new(226, 'Closing data connection.')
 
-    rescue FTP425; session.dtp.close; FTPResponse425.new
-    rescue FTP426; session.dtp.close; FTPResponse.new(426, 'Connection closed; transfer aborted.')
+    rescue FTP425; FTPResponse425.new
+    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure; session.dtp.close
     end
   end
 end
@@ -182,14 +184,15 @@ class FTPCommandStor < FTPCommand
       raise FTP426 if data.nil? || data.length.zero?
 
       File.write(session.sys_path(dest), data)
-      FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
+      FTPResponse.new(226, 'Closing data connection.')
 
-    rescue FTP550; session.dtp.close; FTPResponse(550, 'Destination dir not writable')
-    rescue FTP425; session.dtp.close; FTPResponse425.new
-    rescue FTP426; session.dtp.close; FTPResponse.new(426, 'Connection closed; transfer aborted.')
+    rescue FTP550; FTPResponse(550, 'Destination dir not writable')
+    rescue FTP425; FTPResponse425.new
+    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure; session.dtp.close
     end
   end
 end
@@ -211,14 +214,15 @@ class FTPCommandRetr < FTPCommand
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
       raise FTP426 unless session.dtp.send(session.mode, File.binread(session.sys_path(path)))
-      FTPResponse.new(226, 'Closing data connection.') if session.dtp.close
+      FTPResponse.new(226, 'Closing data connection.')
 
-    rescue FTP550; session.dtp.close; FTPResponse.new(550, "File #{path} does not exist")
-    rescue FTP425; session.dtp.close; FTPResponse425.new
-    rescue FTP426; session.dtp.close; FTPResponse.new(426, 'Connection closed; transfer aborted.')
+    rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")
+    rescue FTP425; FTPResponse425.new
+    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure; session.dtp.close
     end
   end
 end

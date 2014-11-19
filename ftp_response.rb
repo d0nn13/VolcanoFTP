@@ -54,9 +54,14 @@ class FTPResponseSystem < FTPResponse
 end
 
 class FTPResponseFeatures < FTPResponse
-  def initialize(message='UNIX')
-    super(211, 'No special features :)')
+  def initialize(features=['UTF8'])
+    super(211, features.join('\r\n'))
   end
+
+  def to_s
+    "#{@code}-Features\r\n#{@message}\r\n#{@code} End"
+  end
+
 end
 
 class FTPResponseGreet < FTPResponse

@@ -1,19 +1,22 @@
 require 'pathname'
 
 class DTP
+  attr_reader :busy
+
   def initialize
     @bind_ip = nil
     @port = nil
     @socket = nil
+    @busy = false
   end
 
 
 
   def closed?; @socket.nil?; end
 
-  def open; raise Exception.new('DTP::open not implemented'); end
-  def send; raise Exception.new('DTP::send not implemented'); end
-  def recv; raise Exception.new('DTP::recv not implemented'); end
+  def open; raise 'DTP::open not implemented'; end
+  def send; raise 'DTP::send not implemented'; end
+  def recv; raise 'DTP::recv not implemented'; end
 
   def close
     begin
@@ -51,10 +54,12 @@ class DTPPassive < DTP
     begin
       raise 'Client socket closed' if @client.nil?
       raise 'Timeout' if select(nil, [@client], nil, 20).nil?
+      @busy = true
       case mode
         when 'I'; nb = @client.write(data)
         else; nb = @client.write(data.encode(:crlf_newline => :replace))
       end
+      @busy = false
       nb
     rescue => e; puts "#{self.class}::send> #{e.class}: '#{e}'"; false
     end
@@ -64,17 +69,20 @@ class DTPPassive < DTP
     begin
       raise 'Client socket closed' if @client.nil?
       raise 'Timeout' if select([@client], nil, nil, 20).nil?
-      @client.read
+      @busy = true
+      data = @client.read
+      @busy = false
+      data
     rescue => e; puts "#{self.class}::recv> #{e.class}: '#{e}'"; nil
     end
   end
 
   def close
     begin
-      @socket.close unless @socket.nil? || @socket.closed?
       @client.close unless @client.nil? || @client.closed?
-      @socket = nil
+      @socket.close unless @socket.nil? || @socket.closed?
       @client = nil
+      @socket = nil
       @port = nil
       @bind_ip = nil
       true
@@ -106,10 +114,12 @@ class DTPActive < DTP
     begin
       raise 'Client socket closed' if @socket.nil?
       raise 'Timeout' if select(nil, [@socket], nil, 20).nil?
+      @busy = true
       case mode
         when 'I'; nb = @socket.write(data)
         else; nb = @socket.write(data.encode(:crlf_newline => :replace))
       end
+      @busy = false
       nb
     rescue => e; puts "#{self.class}::send> #{e.class}: '#{e}'"; false
     end
@@ -119,7 +129,10 @@ class DTPActive < DTP
     begin
       raise 'Client socket closed' if @socket.nil?
       raise 'Timeout' if select(nil, [@socket], nil, 20).nil?
-      @socket.read
+      @busy = true
+      data = @socket.read
+      @busy = false
+      data
     rescue => e; puts "#{self.class}::recv> #{e.class}: '#{e}'"; nil
     end
   end

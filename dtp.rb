@@ -55,7 +55,6 @@ class DTPPassive < DTP
         when 'I'; nb = @client.write(data)
         else; nb = @client.write(data.encode(:crlf_newline => :replace))
       end
-      @client.close
       nb
     rescue => e; puts "#{self.class}::send> #{e.class}: '#{e}'"; false
     end

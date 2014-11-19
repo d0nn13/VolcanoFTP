@@ -8,6 +8,7 @@ class ProtocolHandler
     @commands = {
         PWD: {obj: FTPCommandPwd, pattern: /^PWD\s*$/i},
         CWD: {obj: FTPCommandCwd, pattern: /^CWD(\s+(?<args>.+))?\s*$/i},
+        CDUP: {obj: FTPCommandCdup, pattern: /^CDUP\s*$/i},
         PASV: {obj: FTPCommandPasv, pattern: /^PASV\s*$/i},
         PORT: {obj: FTPCommandPort, pattern: /^PORT\s+(?<args>(\d{1,3},\s?){5}\d{1,3})\s*$/i},
         LIST: {obj: FTPCommandList, pattern: /^LIST(\s+(?<args>.+))?\s*$/i},

@@ -49,6 +49,19 @@ class FTPCommandCwd < FTPCommand
   end
 end
 
+# ==== CDUP ====
+# Runs 'CWD ..'
+class FTPCommandCdup < FTPCommand
+  def initialize(arg)
+    super()
+    @code = 'CDUP'
+  end
+
+  def do(session)
+    FTPCommandCwd.new('..').do(session)
+  end
+end
+
 # ==== PASV ====
 # Activates the DTP passive mode
 class FTPCommandPasv < FTPCommand

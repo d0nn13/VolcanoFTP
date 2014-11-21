@@ -31,7 +31,7 @@ class VolcanoSettings
     @set_external = false
     config_from_file
     config_from_cli
-    @external_ip = @settings[:bind_ip] unless @set_external
+    @settings[:external_ip] = @settings[:bind_ip] unless @set_external
     @settings.freeze
   end
 
@@ -40,17 +40,25 @@ class VolcanoSettings
     begin
       ip = IPAddr.new(bind)
       if ip.ipv6?
-        VolcanoLog.log('IPv6 is not supported, ignoring value', 0, LOG_ERROR)
+        VolcanoLog.log('Bind address: IPv6 is not supported, ignoring value', 0, LOG_ERROR)
       else
         @settings[:bind_ip] = ip.to_s
       end
-    rescue; VolcanoLog.log("Invalid IPv4 address '#{bind}', ignoring value", 0, LOG_ERROR)
+    rescue; VolcanoLog.log("Bind address: Invalid IPv4 address '#{bind}', ignoring value", 0, LOG_ERROR)
     end
   end
 
-  def set_external_ip(ip)
-    @settings[:external_ip] = ip
-    @set_external = true
+  def set_external_ip(bind)
+    begin
+      ip = IPAddr.new(bind)
+      if ip.ipv6?
+        VolcanoLog.log('External IP: IPv6 is not supported, ignoring value', 0, LOG_ERROR)
+      else
+        @settings[:external_ip] = ip.to_s
+        @set_external = true
+      end
+    rescue; VolcanoLog.log("External IP: Invalid IPv4 address '#{bind}', ignoring value", 0, LOG_ERROR)
+    end
   end
 
   def set_port(port)

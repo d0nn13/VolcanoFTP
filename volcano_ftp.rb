@@ -59,7 +59,7 @@ class VolcanoFTP
   end
 
   def savePid
-    File.open('.volcano_pid', 'w') do |file|
+    File.open('.volcano.pid', 'w') do |file|
       file.puts Process.pid.to_s
     end
   end

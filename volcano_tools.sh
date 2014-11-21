@@ -11,15 +11,15 @@ if [ $usage == 0 ];
     then
     if [ $1 == "start" ];
         then
-        echo "lancement du script"
+        ./volcano_ftp.rb &
 
     elif [ $1 == "stop" ];
         then
-        echo "arret du script"
+        pkill -F .volcano.pid
 
     elif [ $1 == "restart" ];
         then
-        echo "restart du script"
+        pkill -F .volcano.pid; ./volcano_ftp.rb &
     else
         usage=1
     fi

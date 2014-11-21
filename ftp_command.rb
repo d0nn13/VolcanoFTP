@@ -135,7 +135,7 @@ class FTPCommandList < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
-    ensure; session.dtp.close
+    ensure; session.dtp.close unless session.dtp.nil?
     end
   end
 end
@@ -172,7 +172,7 @@ class FTPCommandNlst < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
-    ensure; session.dtp.close
+    ensure; session.dtp.close unless session.dtp.nil?
     end
   end
 end
@@ -205,7 +205,7 @@ class FTPCommandStor < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
-    ensure; session.dtp.close
+    ensure; session.dtp.close unless session.dtp.nil?
     end
   end
 end
@@ -235,7 +235,7 @@ class FTPCommandRetr < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
-    ensure; session.dtp.close
+    ensure; session.dtp.close unless session.dtp.nil?
     end
   end
 end
@@ -278,7 +278,7 @@ class FTPCommandSyst < FTPCommand
 end
 
 # ==== FEAT ====
-# Transmit feature list
+# Transmit feature list (RFC 2839)
 class FTPCommandFeat < FTPCommand
   def initialize(arg)
     super()

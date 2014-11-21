@@ -27,5 +27,11 @@ fi
 
 if [ $usage == 1 ];
     then
-    echo "usage affiche"
+    echo "usage: volcano_tools <command>";
+    echo ""
+    echo "The available commands are:"
+    echo "  restart"
+    echo "  start"
+    echo "  stop"
+    echo ""
 fi

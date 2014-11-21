@@ -1,5 +1,6 @@
 require 'optparse'
 require 'yaml'
+require 'ipaddr'
 require_relative 'volcano_log'
 
 # magic values
@@ -36,7 +37,15 @@ class VolcanoSettings
 
   private
   def set_bind_ip(bind)
-    @settings[:bind_ip] = bind
+    begin
+      ip = IPAddr.new(bind)
+      if ip.ipv6?
+        VolcanoLog.log('IPv6 is not supported, ignoring value', 0, LOG_ERROR)
+      else
+        @settings[:bind_ip] = ip.to_s
+      end
+    rescue; VolcanoLog.log("Invalid IPv4 address '#{bind}', ignoring value", 0, LOG_ERROR)
+    end
   end
 
   def set_external_ip(ip)
@@ -48,7 +57,7 @@ class VolcanoSettings
     if port.to_i >= VOLCANO_MIN_PORT && port.to_i <= VOLCANO_MAX_PORT
       @settings[:port] = port.to_i
     else
-      VolcanoLog.log("Ignoring bad value '#{port}'")
+      VolcanoLog.log("Ignoring bad value '#{port}'", 0, LOG_ERROR)
     end
   end
 
@@ -57,7 +66,7 @@ class VolcanoSettings
     if Dir.exists?(root)
       @settings[:root_dir] = root
     else
-      VolcanoLog.log("Directory '#{root}' does not exists, falling back to default value.")
+      VolcanoLog.log("Directory '#{root}' does not exists, falling back to default value.", 0, LOG_ERROR)
     end
   end
 

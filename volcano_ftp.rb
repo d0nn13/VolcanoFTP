@@ -31,6 +31,7 @@ class VolcanoFTP
   def run
     VolcanoLog.log("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}'] [PID: #{Process.pid}]")
     VolcanoLog.log("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
+    savePid
     sid = 0
 
     begin
@@ -55,6 +56,12 @@ class VolcanoFTP
       VolcanoLog.log("\nLeaving.")
     end
 
+  end
+
+  def savePid
+    File.open('.volcano_pid', 'w') do |file|
+      file.puts Process.pid.to_s
+    end
   end
 end
 

@@ -39,11 +39,11 @@ class ProtocolHandler
         end
       }
       raise if command.nil?
-      VolcanoLog.log("PI: Command\t<#{command}> OK (:", Process.pid, LOG_SUCCESS)
+      $log.puts("PI: Command\t<#{command}> OK (:", Process.pid, LOG_SUCCESS)
       command
 
     rescue RuntimeError
-      VolcanoLog.log("PI: Command\t<#{cmd_str.strip}> NOK ):", Process.pid, LOG_ERROR)
+      $log.puts("PI: Command\t<#{cmd_str.strip}> NOK ):", Process.pid, LOG_ERROR)
       send_response(FTPResponse500.new("'#{cmd_str.strip}': command not understood"))
       nil
     end
@@ -53,7 +53,7 @@ class ProtocolHandler
   def send_response(response)
     if response.is_a?(FTPResponse)
       @client.puts(response)
-      VolcanoLog.log("PI: Response\t<#{response}>", Process.pid, LOG_INFO)
+      $log.puts("PI: Response\t<#{response}>", Process.pid, LOG_INFO)
     end
   end
 end

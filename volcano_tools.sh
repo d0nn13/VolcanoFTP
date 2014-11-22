@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 
+pid=0
+pid_file=".volcano.pid"
+server_log_file="volcano.log"
 server_name="VolcanoFTP"
 server_script_file="volcano_ftp.rb"
-pid_file=".volcano.pid"
-pid=0
 usage=0
 
 start()
 {
     if [ ! -f $pid_file ]; then
-        ./$server_script_file &
+        ./$server_script_file -s -l $server_log_file &
     else
         pid="`cat $pid_file`"
         echo "$server_name: Server already started (PID: $pid)"

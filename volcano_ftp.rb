@@ -31,6 +31,8 @@ class VolcanoFTP
   end
 
   def run
+    Signal.trap('TERM') { exit }
+
     $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}'] [PID: #{Process.pid}]")
     $log.puts("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
     File.open(PID_FILENAME, 'w') { |file| file.puts Process.pid.to_s }  # save pid to file
@@ -53,8 +55,12 @@ class VolcanoFTP
       unless sess_nb.zero?
         msg = "Waiting for #{sess_nb} remaining process#{sess_nb > 1 && 'es' || ''} to finish..."
         $log.puts(msg)
+        @sessions.each_key { |pid|
+          Process.kill('TERM', pid)
+          Process.waitpid(pid)
+          @sessions.delete(pid)
+        }
       end
-      Process.waitall.each { |pid| @sessions.delete(pid) }
       $log.puts('Leaving.')
     ensure
       File.delete(PID_FILENAME) if File.exists?(PID_FILENAME) # delete saved pid file

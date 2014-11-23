@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
 
 pid=0
-pid_file=".volcano.pid"
+pid_filename=".volcano.pid"
 server_log_file="volcano.log"
 server_name="VolcanoFTP"
 server_script_file="volcano_ftp.rb"
-usage=0
 
 start()
 {
-    if [ ! -f $pid_file ]; then
+    if [ ! -f $pid_filename ]; then
         ./$server_script_file -s -l $server_log_file &
     else
-        pid="`cat $pid_file`"
+        pid="`cat $pid_filename`"
         echo "$server_name: Server already started (PID: $pid)"
     fi
 }
 stop()
 {
-    if [ -f $pid_file ]; then
-        pkill -F $pid_file
+    if [ -f $pid_filename ]; then
+        pkill -F $pid_filename
     else
-        echo "$server_name: Server already stopped"
+        echo "$server_name: Server not started"
     fi
 }
 restart()
@@ -33,30 +32,25 @@ usage()
 {
     echo "Usage: $server_name Tools <command>";
     echo ""
-    echo "The available commands are:"
+    echo "Available commands are:"
     echo "  restart"
     echo "  start"
     echo "  stop"
     echo ""
+    exit
 }
 
 if [ $# == 0 ]; then
-    usage=1
-fi
-
-if [ $usage == 0 ]; then
-
-    if [ $1 == "start" ]; then
-        start
-    elif [ $1 == "stop" ]; then
-        stop
-    elif [ $1 == "restart" ]; then
-        restart
-    else
-        usage=1
-    fi
-fi
-
-if [ $usage == 1 ]; then
     usage
 fi
+
+if [ $1 == "start" ]; then
+    start
+elif [ $1 == "stop" ]; then
+    stop
+elif [ $1 == "restart" ]; then
+    restart
+else
+    usage
+fi
+

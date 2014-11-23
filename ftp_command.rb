@@ -305,6 +305,19 @@ class FTPCommandType < FTPCommand
   end
 end
 
+# ==== NOOP ====
+# Does nothing. :)
+class FTPCommandNoop < FTPCommand
+  def initialize(arg)
+    super()
+    @code = 'NOOP'
+  end
+
+  def do(session)
+    FTPResponse.new(200, 'Still here (:')
+  end
+end
+
 # ==== USER ====
 # Login command
 class FTPCommandUser < FTPCommand

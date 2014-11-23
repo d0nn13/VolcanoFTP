@@ -19,6 +19,7 @@ class ProtocolHandler
         SYST: {obj: FTPCommandSyst, pattern: /^SYST\s*$/i},
         FEAT: {obj: FTPCommandFeat, pattern: /^FEAT\s*$/i},
         TYPE: {obj: FTPCommandType, pattern: /^TYPE\s+(?<args>(A|B|I)|(L\s+\d{0,2}))\s*$/i},
+        NOOP: {obj: FTPCommandNoop, pattern: /^NOOP\s*$/i},
         USER: {obj: FTPCommandUser, pattern: /^USER\s+(?<args>.+)\s*$/i},
         PASS: {obj: FTPCommandPass, pattern: /^PASS(\s+(?<args>.+))?\s*$/i},
         QUIT: {obj: FTPCommandQuit, pattern: /^QUIT\s*$/i}

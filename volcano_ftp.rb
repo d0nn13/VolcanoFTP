@@ -29,8 +29,8 @@ class VolcanoFTP
   end
 
   def run
-    VolcanoLog.log("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}'] [PID: #{Process.pid}]")
-    VolcanoLog.log("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
+    $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}'] [PID: #{Process.pid}]")
+    $log.puts("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
     savePid
     sid = 0
 
@@ -39,7 +39,7 @@ class VolcanoFTP
         refresh_sessions
         if select([@socket], nil, nil, 0.2)
           client = @socket.accept
-          VolcanoLog.log("\nClient connected : #{client}")
+          $log.puts("Client connected : #{client}")
           sid += 1
           new_session = VolcanoSession.new(self, sid, client)
           pid = fork {new_session.launch}
@@ -49,11 +49,11 @@ class VolcanoFTP
     rescue SystemExit, Interrupt
       sess_nb = @sessions.length
       unless sess_nb.zero?
-        msg = "\nWaiting for #{sess_nb} remaining process#{sess_nb > 1 && 'es' || ''} to finish..."
-        VolcanoLog.log(msg)
+        msg = "Waiting for #{sess_nb} remaining process#{sess_nb > 1 && 'es' || ''} to finish..."
+        $log.puts(msg)
       end
       Process.waitall.each { |pid| @sessions.delete(pid) }
-      VolcanoLog.log("\nLeaving.")
+      $log.puts('Leaving.')
     end
 
   end
@@ -66,12 +66,18 @@ class VolcanoFTP
 end
 
 begin
-  VolcanoFTP.new(VolcanoSettings.new).run
+  s = VolcanoSettings.new
+  $log = VolcanoLog.new(s)
+  VolcanoFTP.new(s).run
+
 rescue SystemExit
   ;
-rescue SocketError, Errno::EADDRINUSE, Errno::EADDRNOTAVAIL => e
+rescue LogException, SocketError, Errno::EADDRINUSE, Errno::EADDRNOTAVAIL => e
   puts e
 rescue Exception => e
+  raise e
   VolcanoLog.log("Uncaught exception: #{e.class} '#{e}'")
   puts e.backtrace
+ensure
+  $log.close_log unless $log.nil?
 end

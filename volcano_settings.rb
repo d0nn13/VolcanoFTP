@@ -25,7 +25,8 @@ class VolcanoSettings
         external_ip: VOLCANO_DEFAULT_BIND,
         port: VOLCANO_DEFAULT_PORT,
         root_dir: Pathname.new(Dir.home),
-        accept_anon: true
+        log_mode: LOG_MODE_STD,
+        log_path: nil
     }
 
     @set_external = false
@@ -78,8 +79,22 @@ class VolcanoSettings
     end
   end
 
-  def set_accept_anon(accept)
-    @settings[:accept_anon] = accept
+  def set_log_mode(mode)
+    if mode == LOG_MODE_STD || mode == LOG_MODE_FILE
+      @settings[:log_mode] |= mode
+    elsif mode == LOG_MODE_SILENT
+      @settings[:log_mode] &= ~LOG_MODE_STD
+    else
+      VolcanoLog.log('Log mode not set')
+    end
+  end
+
+  def set_log_file(path)
+    #if File.writable?(path)
+      @settings[:log_path] = path
+    #else
+     # VolcanoLog.log('File not writable')
+    #end
   end
 
   def config_from_file
@@ -87,9 +102,9 @@ class VolcanoSettings
       return unless File.exists?(VOLCANO_CONFIG_FILE_PATH)
       cfg = YAML.load_file(VOLCANO_CONFIG_FILE_PATH)
       set_bind_ip(cfg['bind_ip']) if cfg.keys.include?('bind_ip')
+      set_external_ip(cfg['external_ip']) if cfg.keys.include?('external_ip')
       set_port(cfg['port']) if cfg.keys.include?('port')
       set_root_dir(cfg['root_dir']) if cfg.keys.include?('root_dir')
-      set_accept_anon(cfg['accept_anon']) if cfg.keys.include?('accept_anon')
     rescue => e
       VolcanoLog.log(e.to_s)
       exit(1)
@@ -113,8 +128,12 @@ class VolcanoSettings
         opts.on('-r', '--root DIR') { |path|
           set_root_dir(path)
         }
-        opts.on('-a', '--no-anonymous') {
-          set_accept_anon(false)
+        opts.on('-s', '--silent') {
+          set_log_mode(LOG_MODE_SILENT)
+        }
+        opts.on('-l', '--logfile PATH') { |path|
+          set_log_mode(LOG_MODE_FILE)
+          set_log_file(path)
         }
       }.parse!
     rescue OptionParser::MissingArgument, OptionParser::InvalidOption => e

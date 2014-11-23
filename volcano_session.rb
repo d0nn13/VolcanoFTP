@@ -21,7 +21,7 @@ class VolcanoSession
   end
 
   def launch
-    VolcanoLog.log("Process spawn for session n° #{@id}", Process.pid)
+    $log.puts("Process spawn for session n° #{@id}", Process.pid)
     @ph.send_response(FTPResponseGreet.new)
 
     begin
@@ -35,14 +35,14 @@ class VolcanoSession
 
     rescue SystemExit, Interrupt
       msg = "Terminating session n° #{@id}"
-      VolcanoLog.log(msg, Process.pid)
+      $log.puts(msg, Process.pid)
       @ph.send_response(FTPResponseGoodbye.new)
       reset_dtp
       @client.close
 
     rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
       msg = "Client disconnected, terminating session n° #{@id}"
-      VolcanoLog.log(msg, Process.pid)
+      $log.puts(msg, Process.pid)
       reset_dtp
       @client.close
     end

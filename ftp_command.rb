@@ -194,7 +194,7 @@ class FTPCommandStor < FTPCommand
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
       data = session.dtp.recv
-      raise FTP426 if data.nil? || data.length.zero?
+      raise FTP426 if data.nil?
 
       File.write(session.sys_path(dest), data)
       FTPResponse.new(226, 'Closing data connection.')

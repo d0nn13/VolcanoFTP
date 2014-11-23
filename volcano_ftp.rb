@@ -17,6 +17,7 @@ class VolcanoFTP
   attr_reader :settings
 
   def initialize(settings)
+    Signal.trap('TERM') { exit }
     ENV['HOME'] = '/'
     @settings = settings.settings
     @socket = TCPServer.new(@settings[:bind_ip], @settings[:port])
@@ -31,8 +32,6 @@ class VolcanoFTP
   end
 
   def run
-    Signal.trap('TERM') { exit }
-
     $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}'] [PID: #{Process.pid}]")
     $log.puts("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
     File.open(PID_FILENAME, 'w') { |file| file.puts Process.pid.to_s }  # save pid to file

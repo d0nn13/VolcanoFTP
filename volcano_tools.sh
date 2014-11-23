@@ -20,7 +20,6 @@ stop()
 {
     if [ -f $pid_file ]; then
         pkill -F $pid_file
-        rm $pid_file
     else
         echo "$server_name: Server already stopped"
     fi

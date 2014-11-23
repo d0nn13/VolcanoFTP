@@ -5,6 +5,8 @@ require_relative 'volcano_log'
 require_relative 'volcano_settings'
 require_relative 'volcano_session'
 
+PID_FILENAME = '.volcano.pid'
+
 class TCPSocket
   def to_s
     "#{peeraddr(:hostname)[2]} (#{peeraddr(:hostname)[3]}:#{peeraddr(:hostname)[1]})"
@@ -31,7 +33,7 @@ class VolcanoFTP
   def run
     $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}'] [PID: #{Process.pid}]")
     $log.puts("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
-    savePid
+    File.open(PID_FILENAME, 'w') { |file| file.puts Process.pid.to_s }  # save pid to file
     sid = 0
 
     begin
@@ -54,15 +56,11 @@ class VolcanoFTP
       end
       Process.waitall.each { |pid| @sessions.delete(pid) }
       $log.puts('Leaving.')
-    end
-
-  end
-
-  def savePid
-    File.open('.volcano.pid', 'w') do |file|
-      file.puts Process.pid.to_s
+    ensure
+      File.delete(PID_FILENAME) if File.exists?(PID_FILENAME) # delete saved pid file
     end
   end
+
 end
 
 begin
@@ -75,7 +73,6 @@ rescue SystemExit
 rescue LogException, SocketError, Errno::EADDRINUSE, Errno::EADDRNOTAVAIL => e
   puts e
 rescue Exception => e
-  raise e
   VolcanoLog.log("Uncaught exception: #{e.class} '#{e}'")
   puts e.backtrace
 ensure

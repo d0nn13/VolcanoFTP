@@ -3,8 +3,9 @@ require_relative 'ftp_command'
 require_relative 'ftp_response'
 
 class ProtocolHandler
-  def initialize(client)
+  def initialize(client, sid)
     @client = client
+    @sid = sid
     @commands = {
         PWD: {obj: FTPCommandPwd, pattern: /^PWD\s*$/i},
         CWD: {obj: FTPCommandCwd, pattern: /^CWD(\s+(?<args>.+))?\s*$/i},
@@ -40,11 +41,11 @@ class ProtocolHandler
         end
       }
       raise if command.nil?
-      $log.puts("PI: Command\t<#{command}> OK (:", Process.pid, LOG_SUCCESS)
+      $log.puts("PI: Command\t<#{command}> OK (:", @sid, LOG_SUCCESS)
       command
 
     rescue RuntimeError
-      $log.puts("PI: Command\t<#{cmd_str.strip}> NOK ):", Process.pid, LOG_ERROR)
+      $log.puts("PI: Command\t<#{cmd_str.strip}> NOK ):", @sid, LOG_ERROR)
       send_response(FTPResponse500.new("'#{cmd_str.strip}': command not understood"))
       nil
     end
@@ -54,7 +55,7 @@ class ProtocolHandler
   def send_response(response)
     if response.is_a?(FTPResponse)
       @client.puts(response)
-      $log.puts("PI: Response\t<#{response}>", Process.pid, LOG_INFO)
+      $log.puts("PI: Response\t<#{response}>", @sid, LOG_INFO)
     end
   end
 end

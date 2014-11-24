@@ -32,7 +32,7 @@ class VolcanoFTP
   end
 
   def run
-    $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}'] [PID: #{Process.pid}]")
+    $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}']")
     $log.puts("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
     File.open(PID_FILENAME, 'w') { |file| file.puts Process.pid.to_s }  # save pid to file
     sid = 0

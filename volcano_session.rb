@@ -5,14 +5,14 @@ require_relative 'ftp_response'
 
 
 class VolcanoSession
-  attr_reader :id, :settings, :cwd, :mode, :authentication, :ph, :dtp
+  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp
 
   def initialize(server, id, client)
-    @id = id
+    @sid = id
     @settings = server.settings
 
     @client = client
-    @ph = ProtocolHandler.new(@client)
+    @ph = ProtocolHandler.new(@client, @sid)
     @dtp = nil
 
     @cwd = Pathname.new('/')
@@ -21,7 +21,7 @@ class VolcanoSession
   end
 
   def launch
-    $log.puts("Process spawn for session n° #{@id}", Process.pid)
+    $log.puts('New process spawn', @sid)
     @ph.send_response(FTPResponseGreet.new)
 
     begin
@@ -34,15 +34,15 @@ class VolcanoSession
       end
 
     rescue SystemExit, Interrupt
-      msg = "Terminating session n° #{@id}"
-      $log.puts(msg, Process.pid)
+      msg = 'Terminating session'
+      $log.puts(msg, @sid)
       @ph.send_response(FTPResponseGoodbye.new)
       reset_dtp
       @client.close
 
     rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
-      msg = "Client disconnected, terminating session n° #{@id}"
-      $log.puts(msg, Process.pid)
+      msg = 'Client disconnected'
+      $log.puts(msg, @sid)
       reset_dtp
       @client.close
     end

@@ -29,37 +29,37 @@ class VolcanoLog
       @file = File.new(path, 'w')
       @file.sync = true
       @file.puts('')
-      for i in 0..100; @file.putc('=='); end
+      (0..100).each { @file.putc('==') }
       @file.puts("\n\n")
     end
   end
 
-  def self.log(msg, pid=0, level=0)
-    pid_str = pid.zero? && '' || " [#{pid}]"
+  def self.log(msg, sid=0, level=0)
+    id_str = sid.zero? && " [#{Process.pid}]" || " [#{Process.pid}] (##{sid})"
     case level
-      when LOG_INFO; puts "#{Time.now}:#{pid_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}"
-      when LOG_SUCCESS; puts "#{Time.now}:#{pid_str} #{LOG_GREEN}#{msg}#{LOG_RESET}"
-      when LOG_ERROR; puts "#{Time.now}:#{pid_str} #{LOG_RED}#{msg}#{LOG_RESET}"
-      else; puts "#{LOG_RESET}#{Time.now}:#{pid_str} #{msg.strip}#{LOG_RESET}"
+      when LOG_INFO; puts "#{Time.now}:#{id_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}"
+      when LOG_SUCCESS; puts "#{Time.now}:#{id_str} #{LOG_GREEN}#{msg}#{LOG_RESET}"
+      when LOG_ERROR; puts "#{Time.now}:#{id_str} #{LOG_RED}#{msg}#{LOG_RESET}"
+      else; puts "#{LOG_RESET}#{Time.now}:#{id_str} #{msg.strip}#{LOG_RESET}"
     end
   end
 
-  def puts(msg, pid=0, level=0)
-    pid_str = pid.zero? && '' || " [#{pid}]"
+  def puts(msg, sid=0, level=0)
+    id_str = sid.zero? && " [#{Process.pid}]" || " [#{Process.pid}] (##{sid})"
     case level
       when LOG_INFO
-        $stdout.puts "#{Time.now}:#{pid_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
+        $stdout.puts "#{Time.now}:#{id_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
 
       when LOG_SUCCESS
-        $stdout.puts "#{Time.now}:#{pid_str} #{LOG_GREEN}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
+        $stdout.puts "#{Time.now}:#{id_str} #{LOG_GREEN}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
 
       when LOG_ERROR
-        $stderr.puts "#{Time.now}:#{pid_str} #{LOG_RED}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
+        $stderr.puts "#{Time.now}:#{id_str} #{LOG_RED}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
 
       else
-        $stderr.puts "#{LOG_RESET}#{Time.now}:#{pid_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
+        $stderr.puts "#{LOG_RESET}#{Time.now}:#{id_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
     end
-    @file.puts "#{Time.now}:#{pid_str} #{msg}" unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
+    @file.puts "#{Time.now}:#{id_str} #{msg}" unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
   end
 
   def close_log

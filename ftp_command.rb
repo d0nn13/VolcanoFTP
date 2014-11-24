@@ -110,6 +110,7 @@ class FTPCommandList < FTPCommand
     super()
     @code = 'LIST'
     @args << path unless path.nil?
+    @ls_cmd = 'ls -l'
   end
 
   def do(session)
@@ -121,8 +122,8 @@ class FTPCommandList < FTPCommand
         ls_args = ''
         path = session.make_path(@args)
       end
-      syscall = "ls -l #{ls_args} '#{session.sys_path(path)}'"
-      raise FTP425 if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
+      syscall = "#{@ls_cmd} #{ls_args} '#{session.sys_path(path)}'"
+      raise FTP425 if session.dtp.nil? || session.dtp.open == false
 
       ret = `#{syscall}`
 
@@ -142,38 +143,12 @@ end
 
 # ==== NLST ====
 # Transfers the name list of the current working directory
-class FTPCommandNlst < FTPCommand
+class FTPCommandNlst < FTPCommandList
   def initialize(path)
-    super()
+    super(path)
     @code = 'NLST'
     @args << path unless path.nil?
-  end
-
-  def do(session)
-    begin
-      if @args.length.zero? == false && @args[0].match(/^-/)
-        ls_args = @args[0]
-        path = session.cwd
-      else
-        ls_args = ''
-        path = session.make_path(@args)
-      end
-      syscall = "ls #{ls_args} '#{session.sys_path(path)}'"
-      raise FTP425 if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
-
-      ret = `#{syscall}`
-
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
-      raise FTP426 unless session.dtp.send(session.mode, ret)
-      FTPResponse.new(226, 'Closing data connection.')
-
-    rescue FTP425; FTPResponse425.new
-    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
-    rescue => e
-      puts self.class, e.class, e, e.backtrace
-      FTPResponse500.new
-    ensure; session.dtp.close unless session.dtp.nil?
-    end
+    @ls_cmd = 'ls'
   end
 end
 
@@ -193,10 +168,12 @@ class FTPCommandStor < FTPCommand
       raise FTP550 unless FileTest.writable?(session.sys_path(dest).dirname)
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
+      $log.puts(" -- Starting reception to '#{dest}' --", session.sid)
       data = session.dtp.recv
-      raise FTP426 if data.nil? || data.length.zero?
-
+      raise FTP426 if data.nil?
+      File.makedirs(session.sys_path(dest.dirname)) unless Dir.exists?(session.sys_path(dest).dirname)
       File.write(session.sys_path(dest), data)
+      $log.puts(" -- Reception of '#{dest}' ended --", session.sid)
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue FTP550; FTPResponse(550, 'Destination dir not writable')
@@ -222,11 +199,13 @@ class FTPCommandRetr < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      raise FTP550 unless File.exists?(session.sys_path(path))
+      raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       raise FTP425 unless session.dtp.open
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
+      $log.puts(" -- Starting sending of '#{path}' --", session.sid)
       raise FTP426 unless session.dtp.send(session.mode, File.binread(session.sys_path(path)))
+      $log.puts(" -- Sending of '#{path}' ended --", session.sid)
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")
@@ -252,7 +231,7 @@ class FTPCommandDele < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      raise FTP550 unless File.exists?(session.sys_path(path))
+      raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       File.delete(session.sys_path(path))
       FTPResponse250.new("File \"#{path}\" deleted")
 

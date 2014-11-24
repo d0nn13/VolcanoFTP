@@ -222,7 +222,7 @@ class FTPCommandRetr < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      raise FTP550 unless File.exists?(session.sys_path(path))
+      raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       raise FTP425 unless session.dtp.open
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
@@ -252,7 +252,7 @@ class FTPCommandDele < FTPCommand
   def do(session)
     begin
       path = session.make_path(@args)
-      raise FTP550 unless File.exists?(session.sys_path(path))
+      raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       File.delete(session.sys_path(path))
       FTPResponse250.new("File \"#{path}\" deleted")
 

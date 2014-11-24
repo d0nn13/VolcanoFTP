@@ -110,6 +110,7 @@ class FTPCommandList < FTPCommand
     super()
     @code = 'LIST'
     @args << path unless path.nil?
+    @ls_cmd = 'ls -l'
   end
 
   def do(session)
@@ -121,7 +122,7 @@ class FTPCommandList < FTPCommand
         ls_args = ''
         path = session.make_path(@args)
       end
-      syscall = "ls -l #{ls_args} '#{session.sys_path(path)}'"
+      syscall = "#{@ls_cmd} #{ls_args} '#{session.sys_path(path)}'"
       raise FTP425 if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
 
       ret = `#{syscall}`
@@ -142,38 +143,12 @@ end
 
 # ==== NLST ====
 # Transfers the name list of the current working directory
-class FTPCommandNlst < FTPCommand
+class FTPCommandNlst < FTPCommandList
   def initialize(path)
-    super()
+    super(path)
     @code = 'NLST'
     @args << path unless path.nil?
-  end
-
-  def do(session)
-    begin
-      if @args.length.zero? == false && @args[0].match(/^-/)
-        ls_args = @args[0]
-        path = session.cwd
-      else
-        ls_args = ''
-        path = session.make_path(@args)
-      end
-      syscall = "ls #{ls_args} '#{session.sys_path(path)}'"
-      raise FTP425 if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
-
-      ret = `#{syscall}`
-
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
-      raise FTP426 unless session.dtp.send(session.mode, ret)
-      FTPResponse.new(226, 'Closing data connection.')
-
-    rescue FTP425; FTPResponse425.new
-    rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
-    rescue => e
-      puts self.class, e.class, e, e.backtrace
-      FTPResponse500.new
-    ensure; session.dtp.close unless session.dtp.nil?
-    end
+    @ls_cmd = 'ls'
   end
 end
 

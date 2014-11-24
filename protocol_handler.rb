@@ -7,11 +7,11 @@ class ProtocolHandler
     @client = client
     @sid = sid
     @commands = {
-        PWD: {obj: FTPCommandPwd, pattern: /^PWD\s*$/i},
-        CWD: {obj: FTPCommandCwd, pattern: /^CWD(\s+(?<args>.+))?\s*$/i},
+        PWD:  {obj: FTPCommandPwd,  pattern: /^PWD\s*$/i},
+        CWD:  {obj: FTPCommandCwd,  pattern: /^CWD(\s+(?<args>.+))?\s*$/i},
         CDUP: {obj: FTPCommandCdup, pattern: /^CDUP\s*$/i},
-        MKD: {obj: FTPCommandMkd, pattern: /^MKD\s+(?<args>.+)\s*$/i},
-        RMD: {obj: FTPCommandRmd, pattern: /^RMD\s+(?<args>.+)\s*$/i},
+        MKD:  {obj: FTPCommandMkd,  pattern: /^MKD\s+(?<args>.+)\s*$/i},
+        RMD:  {obj: FTPCommandRmd,  pattern: /^RMD\s+(?<args>.+)\s*$/i},
         PASV: {obj: FTPCommandPasv, pattern: /^PASV\s*$/i},
         PORT: {obj: FTPCommandPort, pattern: /^PORT\s+(?<args>(\d{1,3},\s?){5}\d{1,3})\s*$/i},
         LIST: {obj: FTPCommandList, pattern: /^LIST(\s+(?<args>.+))?\s*$/i},

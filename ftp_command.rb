@@ -62,6 +62,55 @@ class FTPCommandCdup < FTPCommand
   end
 end
 
+# ==== MKD ====
+# Creates a directory in the server
+class FTPCommandMkd < FTPCommand
+  def initialize(path)
+    super()
+    @code = 'MKD'
+    @args << path unless path.nil?
+  end
+
+  def do(session)
+    begin
+      path = session.make_path(@args)
+      raise FTP550 if Dir.exists?(session.sys_path(path))
+      Dir.mkdir(session.sys_path(path))
+      FTPResponse250.new("Directory \"#{path}\" created")
+
+    rescue FTP550; FTPResponse.new(550, "#{@code} command failed (directory exists)")
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    end
+  end
+end
+
+# ==== RMD ====
+# Deletes a directory in the server
+class FTPCommandRmd < FTPCommand
+  def initialize(path)
+    super()
+    @code = 'RMD'
+    @args << path unless path.nil?
+  end
+
+  def do(session)
+    begin
+      path = session.make_path(@args)
+      raise FTP550 unless Dir.exists?(session.sys_path(path))
+      Dir.rmdir(session.sys_path(path))
+      FTPResponse250.new("Directory \"#{path}\" deleted")
+
+    rescue Errno::ENOTEMPTY; FTPResponse.new(550, "#{@code} command failed (directory not empty)")
+    rescue FTP550; FTPResponse.new(550, "#{@code} command failed (no such file or directory)")
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    end
+  end
+end
+
 # ==== PASV ====
 # Activates the DTP passive mode
 class FTPCommandPasv < FTPCommand
@@ -235,7 +284,7 @@ class FTPCommandDele < FTPCommand
       File.delete(session.sys_path(path))
       FTPResponse250.new("File \"#{path}\" deleted")
 
-    rescue FTP550; FTPResponse.new(550, 'DELE command failed')
+    rescue FTP550; FTPResponse.new(550, "#{@code} command failed")
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new

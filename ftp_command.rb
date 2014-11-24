@@ -123,7 +123,7 @@ class FTPCommandList < FTPCommand
         path = session.make_path(@args)
       end
       syscall = "#{@ls_cmd} #{ls_args} '#{session.sys_path(path)}'"
-      raise FTP425 if session.dtp.nil? || session.dtp.open.nil? || session.dtp.closed?
+      raise FTP425 if session.dtp.nil? || session.dtp.open == false
 
       ret = `#{syscall}`
 

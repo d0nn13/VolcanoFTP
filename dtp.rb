@@ -25,7 +25,7 @@ class DTP
       @port = nil
       @bind_ip = nil
       true
-    rescue => e; puts "#{self.class}::close> #{e.class}: '#{e}'"; false
+    rescue => e; puts "<#{self.class}::close> #{e.class}: '#{e}'"; false
     end
   end
 end
@@ -46,7 +46,7 @@ class DTPPassive < DTP
     begin
       @client = @socket.accept
       true
-    rescue => e; puts "#{self.class}::open> #{e.class}: '#{e}'"; false
+    rescue => e; puts "<#{self.class}::open> #{e.class}: '#{e}'"; false
     end
   end
 
@@ -61,7 +61,7 @@ class DTPPassive < DTP
       end
       @busy = false
       nb
-    rescue => e; puts "#{self.class}::send> #{e.class}: '#{e}'"; false
+    rescue => e; puts "<#{self.class}::send> #{e.class}: '#{e}'"; false
     end
   end
 
@@ -73,7 +73,7 @@ class DTPPassive < DTP
       data = @client.read
       @busy = false
       data
-    rescue => e; puts "#{self.class}::recv> #{e.class}: '#{e}'"; nil
+    rescue => e; puts "<#{self.class}::recv> #{e.class}: '#{e}'"; nil
     end
   end
 
@@ -86,7 +86,7 @@ class DTPPassive < DTP
       @port = nil
       @bind_ip = nil
       true
-    rescue => e; puts "#{self.class}::close> #{e.class}: '#{e}'"; false
+    rescue => e; puts "<#{self.class}::close> #{e.class}: '#{e}'"; false
     end
   end
 
@@ -106,7 +106,7 @@ class DTPActive < DTP
     begin
       @socket = TCPSocket.new(@bind_ip, @port)
       true
-    rescue => e; puts "#{self.class}::open> #{e.class}: '#{e}'"; false
+    rescue => e; puts "<#{self.class}::open> #{e.class}: '#{e}'"; false
     end
   end
 
@@ -121,7 +121,7 @@ class DTPActive < DTP
       end
       @busy = false
       nb
-    rescue => e; puts "#{self.class}::send> #{e.class}: '#{e}'"; false
+    rescue => e; puts "<#{self.class}::send> #{e.class}: '#{e}'"; false
     end
   end
 
@@ -133,7 +133,7 @@ class DTPActive < DTP
       data = @socket.read
       @busy = false
       data
-    rescue => e; puts "#{self.class}::recv> #{e.class}: '#{e}'"; nil
+    rescue => e; puts "<#{self.class}::recv> #{e.class}: '#{e}'"; nil
     end
   end
 end

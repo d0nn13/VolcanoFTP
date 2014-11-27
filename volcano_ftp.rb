@@ -4,7 +4,6 @@ require 'socket'
 require_relative 'volcano_log'
 require_relative 'volcano_settings'
 require_relative 'volcano_session'
-require_relative 'volcano_stats'
 
 PID_FILENAME = '.volcano.pid'
 
@@ -53,7 +52,6 @@ class VolcanoFTP
         end
       end
     rescue SystemExit, Interrupt
-      VolcanoStats.new
       sess_nb = @sessions.length
       unless sess_nb.zero?
         msg = "Waiting for #{sess_nb} remaining process#{sess_nb > 1 && 'es' || ''} to finish..."

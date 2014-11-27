@@ -20,7 +20,8 @@ class VolcanoSession
     @mode = 'A'
     @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
 
-    @stat = {:user => client, :duration => 0, :transfer_nb=> 0, :start_time=> Time.now}
+    @stat_conn = {:user => client, :duration => 0, :transfer_nb=> 0, :start_time=> Time.now}
+    @stat_transfered = {:speed => 0, :size=> 0}
   end
 
   def launch
@@ -32,8 +33,8 @@ class VolcanoSession
         command = @ph.read_command(@client.readline)
 
         unless command.nil?
-          if command.is_a?(FTPCommandRetr)
-            @stat[:transfer_nb] += 1
+          if command.is_a?(FTPCommandRetr) || command.is_a?(FTPCommandStor)
+            @stat_conn[:transfer_nb] += 1
           end
           @ph.send_response(command.do(self))
           raise EOFError if command.is_a?(FTPCommandQuit)
@@ -41,8 +42,8 @@ class VolcanoSession
       end
 
     rescue SystemExit, Interrupt
-      @stat[:duration] = Time.now
-      VolcanoStats.new(@stat)
+      @stat_conn[:duration] = Time.now
+      VolcanoStats.new(@stat_conn)
 
       msg = 'Terminating session'
       $log.puts(msg, @sid)
@@ -51,8 +52,10 @@ class VolcanoSession
       @client.close
 
     rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
-      @stat[:duration] = Time.now
-      VolcanoStats.new(@stat)
+      @stat_conn[:duration] = Time.now
+      stat = VolcanoStats.new
+      stat.connexion(@stat_conn)
+      stat.transfered(@stat_transfered)
 
       msg = 'Client disconnected'
       $log.puts(msg, @sid)

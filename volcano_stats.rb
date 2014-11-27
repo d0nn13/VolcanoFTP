@@ -4,17 +4,17 @@ class VolcanoStats
 
   def initialize
   	begin
-  		db = SQLite3::Database.open "test.db"
-  		db.execute "CREATE TABLE IF NOT EXISTS Connexion(
+  		db = SQLite3::Database.open 'test.db'
+  		db.execute 'CREATE TABLE IF NOT EXISTS Connexion(
   			User VARCHAR(255),
   			Duration INT,
   			Transfered_nb INT,
   			Start_time DATETIME
-  		)"
-      db.execute "CREATE TABLE IF NOT EXISTS Transfered(
+  		)'
+      db.execute 'CREATE TABLE IF NOT EXISTS Transfered(
         Speed NUMERIC,
         Size NUMERIC
-      )"
+      )'
 
   	rescue SQLite3::Exception => e
   		puts "sqlite error #{e}"
@@ -25,11 +25,11 @@ class VolcanoStats
 
   def connexion(info)
     begin
-      db = SQLite3::Database.open "test.db"
+      db = SQLite3::Database.open 'test.db'
       diff = time_diff(info[:duration], info[:start_time])
       db.execute "INSERT INTO Connexion VALUES ( '#{info[:user]}', '#{diff}', '#{info[:transfer_nb]}', '#{info[:start_time]}' )"  
     rescue SQLite3::Exception => e
-      puts "Insert to connexion table occured an error #{e}"
+      puts "Insert to connexion table occurred an error #{e}"
     ensure
       db.close if db
     end
@@ -38,10 +38,10 @@ class VolcanoStats
 
   def transfered(info)
     begin
-      db = SQLite3::Database.open "test.db"
+      db = SQLite3::Database.open 'test.db'
       db.execute "INSERT INTO Transfered VALUES ( '#{info[:speed]}', '#{info[:size]}' )"  
     rescue SQLite3::Exception => e
-      puts "insert to transfered table occured an error #{e}"
+      puts "insert to transferred table occurred an error #{e}"
     ensure
       db.close if db
     end

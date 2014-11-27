@@ -53,7 +53,7 @@ class VolcanoFTP
         end
       end
     rescue SystemExit, Interrupt
-      VolcanoStats.new($stat)
+      VolcanoStats.new
       sess_nb = @sessions.length
       unless sess_nb.zero?
         msg = "Waiting for #{sess_nb} remaining process#{sess_nb > 1 && 'es' || ''} to finish..."

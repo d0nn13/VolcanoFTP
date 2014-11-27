@@ -40,7 +40,7 @@ class VolcanoSession
 
     rescue SystemExit, Interrupt
       @stat_conn[:duration] = Time.now
-      VolcanoStats.new(@stat_conn)
+      VolcanoStats.new
 
       msg = 'Terminating session'
       $log.puts(msg, @sid)

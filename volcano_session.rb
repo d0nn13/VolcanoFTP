@@ -2,6 +2,7 @@ require_relative 'protocol_handler'
 require_relative 'dtp'
 require_relative 'ftp_command'
 require_relative 'ftp_response'
+require_relative 'volcano_stats'
 
 
 class VolcanoSession
@@ -18,6 +19,8 @@ class VolcanoSession
     @cwd = Pathname.new('/')
     @mode = 'A'
     @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
+
+    @stat = {:user => client, :duration => 0, :transfer_nb=> 0, :start_time=> Time.now}
   end
 
   def launch
@@ -27,13 +30,20 @@ class VolcanoSession
     begin
       while 1
         command = @ph.read_command(@client.readline)
+
         unless command.nil?
+          if command.is_a?(FTPCommandRetr)
+            @stat[:transfer_nb] += 1
+          end
           @ph.send_response(command.do(self))
           raise EOFError if command.is_a?(FTPCommandQuit)
         end
       end
 
     rescue SystemExit, Interrupt
+      @stat[:duration] = Time.now
+      VolcanoStats.new(@stat)
+
       msg = 'Terminating session'
       $log.puts(msg, @sid)
       @ph.send_response(FTPResponseGoodbye.new)
@@ -41,6 +51,9 @@ class VolcanoSession
       @client.close
 
     rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
+      @stat[:duration] = Time.now
+      VolcanoStats.new(@stat)
+
       msg = 'Client disconnected'
       $log.puts(msg, @sid)
       reset_dtp

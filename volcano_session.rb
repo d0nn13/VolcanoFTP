@@ -33,9 +33,6 @@ class VolcanoSession
         command = @ph.read_command(@client.readline)
 
         unless command.nil?
-          if command.is_a?(FTPCommandRetr) || command.is_a?(FTPCommandStor)
-            @stat_conn[:transfer_nb] += 1
-          end
           @ph.send_response(command.do(self))
           raise EOFError if command.is_a?(FTPCommandQuit)
         end

@@ -174,6 +174,8 @@ class FTPCommandStor < FTPCommand
       File.makedirs(session.sys_path(dest.dirname)) unless Dir.exists?(session.sys_path(dest).dirname)
       File.write(session.sys_path(dest), data)
       $log.puts(" -- Reception of '#{dest}' ended --", session.sid)
+
+      session.stat_conn[:transfer_nb] += 1  # Update stats
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue FTP550; FTPResponse(550, 'Destination dir not writable')
@@ -206,6 +208,8 @@ class FTPCommandRetr < FTPCommand
       $log.puts(" -- Starting sending of '#{path}' --", session.sid)
       raise FTP426 unless session.dtp.send(session.mode, File.binread(session.sys_path(path)))
       $log.puts(" -- Sending of '#{path}' ended --", session.sid)
+
+      session.stat_conn[:transfer_nb] += 1  # Update stats
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")

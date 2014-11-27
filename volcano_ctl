@@ -19,6 +19,7 @@ stop()
 {
     if [ -f $pid_filename ]; then
         pkill -F $pid_filename
+        rm .volcano.pid
     else
         echo "$server_name: Server not started"
     fi

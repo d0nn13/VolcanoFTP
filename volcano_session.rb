@@ -6,7 +6,7 @@ require_relative 'volcano_stats'
 
 
 class VolcanoSession
-  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp, :stats_data
+  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp, :stats, :stats_data
 
   def initialize(server, id, client)
     @sid = id
@@ -48,7 +48,7 @@ class VolcanoSession
       msg = 'Terminating session'
       $log.puts(msg, @sid)
       @ph.send_response(FTPResponseGoodbye.new)
-      
+
       reset_dtp
       @client.close
 

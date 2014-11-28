@@ -211,7 +211,7 @@ class FTPCommandStor < FTPCommand
       session.stats_data[:conn][:transfer_nb] += 1  # Update stats
       session.stats_data[:transfer][:name] = dest
       session.stats_data[:transfer][:size] = data.length # Update transfered file size for stat
-
+      session.stats.transfered(session.stats_data)
 
       FTPResponse.new(226, 'Closing data connection.')
 
@@ -250,6 +250,7 @@ class FTPCommandRetr < FTPCommand
       session.stats_data[:conn][:transfer_nb] += 1  # Update stats
       session.stats_data[:transfer][:name] = path
       session.stats_data[:transfer][:size] = size # Update transfered file size for stat
+      session.stats.transfered(session.stats_data)
 
       FTPResponse.new(226, 'Closing data connection.')
 

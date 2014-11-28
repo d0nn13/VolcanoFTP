@@ -62,47 +62,6 @@ class FTPCommandCdup < FTPCommand
   end
 end
 
-# ==== PASV ====
-# Activates the DTP passive mode
-class FTPCommandPasv < FTPCommand
-  def initialize(arg)
-    super()
-    @code = 'PASV'
-  end
-
-  def do(session)
-    begin
-      session.set_dtp(DTPPassive.new(session.settings[:external_ip]))
-      FTPResponse.new(227, "Entering passive mode (#{session.dtp.conn_info})")
-    rescue => e
-      puts self.class, e.class, e, e.backtrace
-      FTPResponse500.new
-    end
-  end
-end
-
-# ==== PORT ====
-# Activates the DTP active mode
-class FTPCommandPort < FTPCommand
-  def initialize(port)
-    super()
-    @code = 'PORT'
-    @args << port.gsub(/\s/, '')  # remove spaces
-  end
-
-  def do(session)
-    begin
-      bind = @args[0].split(',')[0..3].join('.')
-      port = @args[0].split(',')[4].to_i * 256 + @args[0].split(',')[5].to_i
-      session.set_dtp(DTPActive.new(bind, port))
-      FTPResponse200.new('Entered active mode')
-    rescue => e
-      puts self.class, e.class, e, e.backtrace
-      FTPResponse500.new
-    end
-  end
-end
-
 # ==== LIST ====
 # Transfers the contents of the current working directory
 class FTPCommandList < FTPCommand
@@ -149,6 +108,79 @@ class FTPCommandNlst < FTPCommandList
     @code = 'NLST'
     @args << path unless path.nil?
     @ls_cmd = 'ls'
+  end
+end
+
+# ==== DELE ====
+# Deletes server file
+class FTPCommandDele < FTPCommand
+  def initialize(path)
+    super()
+    @code = 'DELE'
+    @args << path unless path.nil?
+  end
+
+  def do(session)
+    begin
+      path = session.make_path(@args)
+      raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
+      File.delete(session.sys_path(path))
+      FTPResponse250.new("File \"#{path}\" deleted")
+
+    rescue FTP550; FTPResponse.new(550, "#{@code} command failed")
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    end
+  end
+end
+
+# ==== MKD ====
+# Creates a directory in the server
+class FTPCommandMkd < FTPCommand
+  def initialize(path)
+    super()
+    @code = 'MKD'
+    @args << path unless path.nil?
+  end
+
+  def do(session)
+    begin
+      path = session.make_path(@args)
+      raise FTP550 if Dir.exists?(session.sys_path(path))
+      Dir.mkdir(session.sys_path(path))
+      FTPResponse250.new("Directory \"#{path}\" created")
+
+    rescue FTP550; FTPResponse.new(550, "#{@code} command failed (directory exists)")
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    end
+  end
+end
+
+# ==== RMD ====
+# Deletes a directory in the server
+class FTPCommandRmd < FTPCommand
+  def initialize(path)
+    super()
+    @code = 'RMD'
+    @args << path unless path.nil?
+  end
+
+  def do(session)
+    begin
+      path = session.make_path(@args)
+      raise FTP550 unless Dir.exists?(session.sys_path(path))
+      Dir.rmdir(session.sys_path(path))
+      FTPResponse250.new("Directory \"#{path}\" deleted")
+
+    rescue Errno::ENOTEMPTY; FTPResponse.new(550, "#{@code} command failed (directory not empty)")
+    rescue FTP550; FTPResponse.new(550, "#{@code} command failed (no such file or directory)")
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    end
   end
 end
 
@@ -219,23 +251,40 @@ class FTPCommandRetr < FTPCommand
   end
 end
 
-# ==== DELE ====
-# Deletes server file
-class FTPCommandDele < FTPCommand
-  def initialize(path)
+# ==== PASV ====
+# Activates the DTP passive mode
+class FTPCommandPasv < FTPCommand
+  def initialize(arg)
     super()
-    @code = 'DELE'
-    @args << path unless path.nil?
+    @code = 'PASV'
   end
 
   def do(session)
     begin
-      path = session.make_path(@args)
-      raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
-      File.delete(session.sys_path(path))
-      FTPResponse250.new("File \"#{path}\" deleted")
+      session.set_dtp(DTPPassive.new(session.settings[:external_ip]))
+      FTPResponse.new(227, "Entering passive mode (#{session.dtp.conn_info})")
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    end
+  end
+end
 
-    rescue FTP550; FTPResponse.new(550, 'DELE command failed')
+# ==== PORT ====
+# Activates the DTP active mode
+class FTPCommandPort < FTPCommand
+  def initialize(port)
+    super()
+    @code = 'PORT'
+    @args << port.gsub(/\s/, '')  # remove spaces
+  end
+
+  def do(session)
+    begin
+      bind = @args[0].split(',')[0..3].join('.')
+      port = @args[0].split(',')[4].to_i * 256 + @args[0].split(',')[5].to_i
+      session.set_dtp(DTPActive.new(bind, port))
+      FTPResponse200.new('Entered active mode')
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
@@ -308,12 +357,7 @@ class FTPCommandUser < FTPCommand
 
   def do(session)
     begin
-      # TODO user login stuff
-      # session.server_user_login(@args[0].to_s, nil)
       FTPResponse.new(230, "User '#{@args[0]}' accepted")
-    rescue => e
-      puts self.class, e.class, e, e.backtrace
-      FTPResponse500.new
     end
   end
 end
@@ -326,11 +370,6 @@ class FTPCommandPass < FTPCommand
     @code = 'PASS'
     @args << pass
   end
-
-  # def do(session)
-    # session.server_user_login(nil, @args[0].to_s)
-    # FTPResponse.new(230, "User '#{@args[0]}' accepted")
-  # end
 end
 
 # ==== QUIT ====

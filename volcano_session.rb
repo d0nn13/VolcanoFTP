@@ -6,7 +6,7 @@ require_relative 'volcano_stats'
 
 
 class VolcanoSession
-  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp
+  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp, :stat_conn, :stat_transfered
 
   def initialize(server, id, client)
     @sid = id

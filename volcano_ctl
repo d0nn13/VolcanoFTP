@@ -11,17 +11,20 @@ start()
     if [ ! -f $pid_filename ]; then
         ./$server_script_file -s -l $server_log_file &
     else
-        pid="`cat $pid_filename`"
+        pid=$(cat $pid_filename)
         echo "$server_name: Server already started (PID: $pid)"
     fi
 }
 stop()
 {
     if [ -f $pid_filename ]; then
+        pid=$(cat $pid_filename)
         pkill -3 -F $pid_filename
         echo "Terminating server.."
         sleep 1   # Wait at least 1 second for the server to quit
-        if [ -z `pgrep -F $pid_filename` ] && [ -f $pid_filename ]; then  # if process is not found but .pid file still here
+
+        kill -0 ${pid} 2> /dev/null
+        if [ $? -eq 0 ] && [ -f $pid_filename ]; then  # if process is not found but .pid file still here
             rm .volcano.pid
         fi
     else

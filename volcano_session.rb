@@ -5,7 +5,7 @@ require_relative 'ftp_response'
 
 
 class VolcanoSession
-  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp
+  attr_reader :sid, :settings, :cwd, :mode, :ph, :dtp
 
   def initialize(server, id, client)
     @sid = id
@@ -17,7 +17,6 @@ class VolcanoSession
 
     @cwd = Pathname.new('/')
     @mode = 'A'
-    @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
   end
 
   def launch
@@ -82,18 +81,6 @@ class VolcanoSession
 
   def sys_path(path)
     path.sub('/', settings[:root_dir].to_s + '/')
-  end
-
-  # Handle user authentication (USER|PASS)
-  def user_authentication(user, pass=nil)
-    unless user.nil?
-      # handle user name (exists?)
-    end
-
-    unless pass.nil?
-      # handle password
-    end
-    true
   end
 
 end

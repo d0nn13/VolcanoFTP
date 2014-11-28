@@ -16,7 +16,8 @@ class VolcanoStats
         db.execute 'CREATE TABLE IF NOT EXISTS Transfered(
           Name TEXT,
           Speed NUMERIC,
-          Size NUMERIC
+          Size NUMERIC,
+          Method VARCHAR(4)
         )'
       }
 
@@ -45,7 +46,7 @@ class VolcanoStats
   def transfered(info)
     begin
       SQLite3::Database.open(@db_name) { |db|
-        db.execute "INSERT INTO Transfered VALUES ( '#{info[:transfer][:name]}', '#{info[:transfer][:speed]}', '#{info[:transfer][:size]}' )"  
+        db.execute "INSERT INTO Transfered VALUES ( '#{info[:transfer][:name]}', '#{info[:transfer][:speed]}', '#{info[:transfer][:size]}', '#{info[:transfer][:method]}' )"  
       }
     rescue SQLite3::Exception => e
       $log.puts "insert to transferred table occurred an error #{e}"

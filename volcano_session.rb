@@ -22,7 +22,7 @@ class VolcanoSession
     @stats = VolcanoStats.new
     @stats_data = {
       conn: {user: @client, duration: 0, transfer_nb: 0, start_time: Time.now},
-      transfer: {:name => '', :speed => 0, :size=> 0}
+      transfer: {name: '', speed: 0, size: 0, method: ''}
     } 
   end
 

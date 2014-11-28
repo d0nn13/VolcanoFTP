@@ -6,7 +6,7 @@ require_relative 'volcano_stats'
 
 
 class VolcanoSession
-  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp, :stat_conn, :stat_transfered
+  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp, :stats_data
 
   def initialize(server, id, client)
     @sid = id
@@ -20,8 +20,11 @@ class VolcanoSession
     @mode = 'A'
     @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
 
-    @stat_conn = {:user => client, :duration => 0, :transfer_nb=> 0, :start_time=> Time.now}
-    @stat_transfered = {:speed => 0, :size=> 0}
+    @stats = VolcanoStats.new
+    @stats_data = {
+      conn: {user: @client, duration: 0, transfer_nb: 0, start_time: Time.now},
+      transfer: {:name => '', :speed => 0, :size=> 0}
+    } 
   end
 
   def launch
@@ -39,25 +42,23 @@ class VolcanoSession
       end
 
     rescue SystemExit, Interrupt
-      @stat_conn[:duration] = Time.now
-      stat = VolcanoStats.new
-      stat.connexion(@stat_conn)
-      stat.transfered(@stat_transfered)
+      @stats_data[:conn][:duration] = Time.now
+      @stats.connexion(@stats_data)
 
       msg = 'Terminating session'
       $log.puts(msg, @sid)
       @ph.send_response(FTPResponseGoodbye.new)
+      
       reset_dtp
       @client.close
 
     rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
-      @stat_conn[:duration] = Time.now
-      stat = VolcanoStats.new
-      stat.connexion(@stat_conn)
-      stat.transfered(@stat_transfered)
+      @stats_data[:conn][:duration] = Time.now
+      @stats.connexion(@stats_data)
 
       msg = 'Client disconnected'
       $log.puts(msg, @sid)
+     
       reset_dtp
       @client.close
     end

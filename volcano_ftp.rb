@@ -17,6 +17,7 @@ class VolcanoFTP
   attr_reader :settings
 
   def initialize(settings)
+    Signal.trap('QUIT') { exit }
     Signal.trap('TERM') { exit }
     ENV['HOME'] = '/'
     @settings = settings.settings

@@ -44,6 +44,7 @@ class VolcanoStats
   end
 
 
+  private
   def time_diff(start_time, end_time)
     seconds_diff = (start_time - end_time).to_i.abs
 

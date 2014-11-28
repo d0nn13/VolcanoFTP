@@ -44,8 +44,10 @@ class VolcanoFTP
         if select([@socket], nil, nil, 0.2)
           client = @socket.accept
           $log.puts("Client connected : #{client}")
+
           sid += 1
           new_session = VolcanoSession.new(self, sid, client)
+
           pid = fork {new_session.launch}
           @sessions[pid] = new_session
         end

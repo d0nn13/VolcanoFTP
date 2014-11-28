@@ -3,3 +3,6 @@
 .idea/dictionaries/
 .idea/workspace.xml
 .volcano.pid
+*.log
+*.db
+

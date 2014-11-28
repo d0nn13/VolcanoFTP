@@ -202,10 +202,18 @@ class FTPCommandStor < FTPCommand
 
       $log.puts(" -- Starting reception to '#{dest}' --", session.sid)
       data = session.dtp.recv
+
       raise FTP426 if data.nil?
       File.makedirs(session.sys_path(dest.dirname)) unless Dir.exists?(session.sys_path(dest).dirname)
       File.write(session.sys_path(dest), data)
       $log.puts(" -- Reception of '#{dest}' ended --", session.sid)
+
+      session.stats_data[:conn][:transfer_nb] += 1  # Update stats
+      session.stats_data[:transfer][:name] = dest
+      session.stats_data[:transfer][:size] = data.length # Update transferred file size for stat
+      session.stats_data[:transfer][:method] = @code # Update transferred method for stat
+      session.stats.transfered(session.stats_data)
+
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue FTP550; FTPResponse(550, 'Destination dir not writable')
@@ -236,8 +244,16 @@ class FTPCommandRetr < FTPCommand
       session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
 
       $log.puts(" -- Starting sending of '#{path}' --", session.sid)
-      raise FTP426 unless session.dtp.send(session.mode, File.binread(session.sys_path(path)))
+      size = session.dtp.send(session.mode, File.binread(session.sys_path(path)))
+      raise FTP426 unless size
       $log.puts(" -- Sending of '#{path}' ended --", session.sid)
+
+      session.stats_data[:conn][:transfer_nb] += 1  # Update stats
+      session.stats_data[:transfer][:name] = path
+      session.stats_data[:transfer][:size] = size # Update transfered file size for stat
+      session.stats_data[:transfer][:method] = @code # Update transferred method for stat
+      session.stats.transfered(session.stats_data)
+
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")

@@ -6,7 +6,7 @@ require_relative 'volcano_stats'
 
 
 class VolcanoSession
-  attr_reader :sid, :settings, :cwd, :mode, :authentication, :ph, :dtp, :stats, :stats_data
+  attr_reader :sid, :settings, :cwd, :mode, :ph, :dtp, :stats, :stats_data
 
   def initialize(server, id, client)
     @sid = id
@@ -18,7 +18,6 @@ class VolcanoSession
 
     @cwd = Pathname.new('/')
     @mode = 'A'
-    @authentication = -1   # -1: no auth negotiated, 0: USER given, 1: auth OK | TODO: better
 
     @stats = VolcanoStats.new
     @stats_data = {
@@ -98,18 +97,6 @@ class VolcanoSession
 
   def sys_path(path)
     path.sub('/', settings[:root_dir].to_s + '/')
-  end
-
-  # Handle user authentication (USER|PASS)
-  def user_authentication(user, pass=nil)
-    unless user.nil?
-      # handle user name (exists?)
-    end
-
-    unless pass.nil?
-      # handle password
-    end
-    true
   end
 
 end

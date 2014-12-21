@@ -11,6 +11,11 @@ class FTPResponse
     @message = message
   end
 
+  def do(client)
+    client.socket.puts(self)
+    $log.puts("<<<<  <#{self}>", client.id, LOG_INFO)
+  end
+
   def to_s
     "#{@code.to_s} #{@message}"
   end
@@ -61,7 +66,6 @@ class FTPResponseFeatures < FTPResponse
   def to_s
     "#{@code}-Features\r\n#{@message}\r\n#{@code} End"
   end
-
 end
 
 class FTPResponseGreet < FTPResponse

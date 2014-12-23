@@ -82,28 +82,16 @@ class VolcanoFTPThreaded
     Signal.trap('QUIT') { exit }
     Signal.trap('TERM') { exit }
     ENV['HOME'] = '/'
+    Thread.abort_on_exception = true
     @settings = settings.settings
     @srv_sock = TCPServer.new(@settings[:bind_ip], @settings[:port])
     @ph = ProtocolHandlerThreaded.get_instance
     @workers = []
+    @jobs = Queue.new
     @clients = {
         mutex: Mutex.new,
         pool: Set.new
     }
-    @jobs = {
-        mutex: Mutex.new,
-        queue: Queue.new
-    }
-  end
-
-  def accept
-    cf = ClientFactory.get_instance(self)
-    return unless select([@srv_sock], nil, nil, 0)
-    client = cf.build_client(@srv_sock.accept)
-    push_client(client)
-    $log.puts("! Client connected: #{client.socket}")
-    @ph.send_response(client, FTPResponseGreet.new)
-    @clients[:pool]
   end
 
   def run
@@ -112,38 +100,44 @@ class VolcanoFTPThreaded
     File.open(PID_FILENAME, 'w') { |file| file.puts Process.pid.to_s }  # save pid to file
 
     wf = WorkerFactory.get_instance(self)
+    cf = ClientFactory.get_instance(self)
 
-    (1..@settings[:worker_nb]).each {
+    n = nil
+    (1..@settings[:worker_nb]).each { |it|
       w = wf.build_worker
       @workers << Thread.new { w.handle_job }
-      $log.puts("* Worker thread ##{w.id} created")
+      n = it
     }
+    $log.puts("* #{n} worker threads created")
 
     while 1
-      accept
-      c = nil
-      @clients[:mutex].synchronize { c = @clients[:pool].size }
-      if c.zero?
-        sleep(0.01); next
-      end
-
-      client_select_read.each { |c|
-        begin
-          cmd = @ph.read_command(c)
-          unless cmd.nil?
-            push_job(Job.new(c, cmd))
-          end
-
-        rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
-          delete_client(c)
-          $log.puts("! Client disconnected: #{c}")
+      begin
+        accept(cf)
+        if nb_client.zero?
+          sleep(0.1); next
         end
-      }
-      sleep(0.01)
+
+        client_select_read.each { |c|
+          cmd = @ph.read_command(c)
+          push_job(Job.new(c, cmd)) unless cmd.nil?
+        }
+      rescue ClientConnectionLost => e
+        handle_clientconnectionlost(e)
+      ensure
+        sleep(0.05)
+      end
     end
 
-    @workers.each { |w| w.join }
+  end
 
+  private
+  def accept(cf)
+    return unless select([@srv_sock], nil, nil, 0)
+    client = cf.build_client(@srv_sock.accept)
+    n = push_client(client)
+    $log.puts("! Client connected: #{client.socket} (Total: #{n})")
+    @ph.send_response(client, FTPResponseGreet.new)
+    @clients[:pool]
   end
 
   def client_select_read
@@ -168,38 +162,45 @@ class VolcanoFTPThreaded
     write_ready
   end
 
+  def nb_client
+    n = nil
+    @clients[:mutex].synchronize { n = @clients[:pool].size }
+    n
+  end
+
   def push_client(c)
-    unless c.nil?
-      @clients[:mutex].synchronize { @clients[:pool].add(c) }
-    end
+    n = nil
+    @clients[:mutex].synchronize {
+      @clients[:pool].add(c) unless c.nil?
+      n = @clients[:pool].size
+    }
+    n
   end
 
   def delete_client(c)
-    unless c.nil?
-      @clients[:mutex].synchronize { @clients[:pool].delete(c) }
-    end
+    n = nil
+    @clients[:mutex].synchronize {
+      @clients[:pool].delete(c) unless c.nil?
+      n = @clients[:pool].size
+    }
+    n
   end
 
+  public
   def push_job(j)
-    unless j.nil?
-      @jobs[:mutex].synchronize { @jobs[:queue].push(j) }
-    end
+    @jobs.push(j) unless j.nil?
+    @jobs.length
   end
 
   def pop_job
-    j = nil
-    @jobs[:mutex].synchronize { j = @jobs[:queue].pop }
-    j
+    @jobs.pop
   end
 
-  def no_job
-    r = nil
-    @jobs[:mutex].synchronize { r = @jobs[:queue].size }
-    r.zero?
+  def handle_clientconnectionlost(e)
+    n = delete_client(e.client)
+    $log.puts("! Client disconnected: #{e.client} (Total: #{n})")
   end
 end
-
-
 
 
 
@@ -213,8 +214,7 @@ rescue SystemExit, Interrupt
 rescue LogException, SocketError, Errno::EADDRINUSE, Errno::EADDRNOTAVAIL => e
   puts e
 rescue Exception => e
-  #raise e
-  VolcanoLog.log("Uncaught exception: #{e.class} '#{e}'")
+  VolcanoLog.log("Uncaught exception: #{e.inspect} '#{e}'")
   puts e.backtrace
 ensure
   $log.close_log unless $log.nil?

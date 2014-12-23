@@ -11,16 +11,16 @@ class Worker
 
   def handle_job
     while 1
-      if @server.no_job
-        sleep(0.01); next
-      end
+      begin
+        req = @server.pop_job
+        unless req.nil?
+          $log.puts("* Worker ##{@id}: #{req}")
+          @ph.send_response(req.client, req.do)
+        end
 
-      req = @server.pop_job
-      unless req.nil?
-        $log.puts("* Worker ##{@id}: #{req}")
-        @ph.send_response(req.client, req.do)
+      rescue ClientConnectionLost => e
+        @server.handle_clientconnectionlost(e)
       end
-
     end
   end
 end

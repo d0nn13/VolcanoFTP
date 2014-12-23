@@ -147,5 +147,4 @@ class VolcanoSessionThreaded
   def sys_path(path)
     path.sub('/', @settings[:root_dir].to_s + '/')
   end
-
 end

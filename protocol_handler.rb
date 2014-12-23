@@ -3,6 +3,13 @@ require_relative 'ftp_command'
 require_relative 'ftp_response'
 require_relative 'job'
 
+class ClientConnectionLost < RuntimeError
+  attr_reader :client
+  def initialize(client)
+    @client = client
+  end
+end
+
 class ProtocolHandler
   def initialize(client, sid)
     @client = client
@@ -88,7 +95,6 @@ class ProtocolHandlerThreaded
         PASS: {obj: FTPCommandPass, pattern: /^PASS(\s+(?<args>.+))?\s*$/i},
         QUIT: {obj: FTPCommandQuit, pattern: /^QUIT\s*$/i}
     }
-    @mutex = Mutex.new
   end
 
   public
@@ -99,11 +105,11 @@ class ProtocolHandlerThreaded
 
   # Reads raw data and returns a Command
   def read_command(client)
-    cmd_str = nil
-    @mutex.synchronize { cmd_str = client.socket.readline }
-
     begin
+      cmd_str = nil
       command = nil
+      cmd_str = client.socket.readline
+
       @commands.each_value { |cmd|
         if cmd[:obj].nil?; next; end
         match = cmd[:pattern].match(cmd_str.chomp)
@@ -121,14 +127,23 @@ class ProtocolHandlerThreaded
       $log.puts(">>>>  <#{cmd_str.strip}> NOK ):", client.id, LOG_ERROR)
       send_response(client, FTPResponse500.new("'#{cmd_str.strip}': command not understood"))
       nil
+
+    rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
+      raise ClientConnectionLost.new(client)
     end
+
   end
 
   # Send a response to a client
   def send_response(client, response)
-    if response.is_a?(FTPResponse)
-      @mutex.synchronize { client.socket.puts(response) }
-      $log.puts("<<<<  <#{response}>", client.id, LOG_INFO)
+    begin
+      if response.is_a?(FTPResponse)
+        client.socket.puts(response)
+        $log.puts("<<<<  <#{response}>", client.id, LOG_INFO)
+      end
+
+    rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
+      raise ClientConnectionLost.new(client)
     end
   end
 

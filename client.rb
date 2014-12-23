@@ -1,7 +1,6 @@
 require_relative 'volcano_session'
 
 class Client
-
   attr_reader :server, :socket, :session, :id
 
   def initialize(server, id, socket)
@@ -19,11 +18,10 @@ class Client
   def to_s
     "#{socket}(##{@id})"
   end
-
 end
 
-class ClientFactory
 
+class ClientFactory
   def self.get_instance(server)
     @instance = ClientFactory.new(server) if @instance.nil?
     @instance

@@ -1,3 +1,4 @@
+require_relative 'protocol_handler'
 require_relative 'ftp_response'
 require_relative 'dtp'
 require_relative 'job'
@@ -5,13 +6,9 @@ require_relative 'job'
 # Base class for all commands
 class FTPCommand
   def initialize
-    @server = nil
+    @ph = ProtocolHandlerThreaded.get_instance
     @code = 'NaC'  # "Not a Command"
     @args = []
-  end
-
-  def set_server(server)
-    @server = server
   end
 
   def do(client); FTPResponse502.new; end
@@ -96,7 +93,7 @@ class FTPCommandList < FTPCommand
 
       ret = `#{syscall}`
 
-      @server.push_response(Job.new(client, FTPResponse.new(150, 'File status OK.'))) if $?.exitstatus.zero?
+      @ph.send_response(client, FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
       raise FTP426 unless session.dtp.send(session.mode, ret)
       FTPResponse.new(226, 'Closing data connection.')
 
@@ -212,7 +209,7 @@ class FTPCommandStor < FTPCommand
       dest = session.cwd + Pathname.new(@args[0]).basename
       raise FTP425 unless session.dtp.open
       raise FTP550 unless FileTest.writable?(session.sys_path(dest).dirname)
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
+      @ph.send_response(client, FTPResponse.new(150, 'File status OK.'))
 
       $log.puts(" -- Starting reception to '#{dest}' --", session.sid)
       data = session.dtp.recv
@@ -256,9 +253,9 @@ class FTPCommandRetr < FTPCommand
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       raise FTP425 unless session.dtp.open
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
+      @ph.send_response(client, FTPResponse.new(150, 'File status OK.'))
 
-      $log.puts(" -- Starting sending of '#{path}' --", session.sid)
+      $log.puts(" -- Starting sending of '#{path}' --", client.id)
       size = session.dtp.send(session.mode, File.binread(session.sys_path(path)))
       raise FTP426 unless size
       $log.puts(" -- Sending of '#{path}' ended --", session.sid)

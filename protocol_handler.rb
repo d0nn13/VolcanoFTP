@@ -65,10 +65,8 @@ end
 
 
 class ProtocolHandlerThreaded
-  attr_reader :server
-
-  def initialize(server)
-    @server = server
+  private
+  def initialize
     @commands = {
         PWD:  {obj: FTPCommandPwd,  pattern: /^PWD\s*$/i},
         CWD:  {obj: FTPCommandCwd,  pattern: /^CWD(\s+(?<args>.+))?\s*$/i},
@@ -90,11 +88,21 @@ class ProtocolHandlerThreaded
         PASS: {obj: FTPCommandPass, pattern: /^PASS(\s+(?<args>.+))?\s*$/i},
         QUIT: {obj: FTPCommandQuit, pattern: /^QUIT\s*$/i}
     }
+    @mutex = Mutex.new
+    @responses = Queue.new
+    @respmutex = Mutex.new
   end
 
-  # Reads raw data and returns a Job
+  public
+  def self.get_instance
+    @instance = ProtocolHandlerThreaded.new if @instance.nil?
+    @instance
+  end
+
+  # Reads raw data and returns a Command
   def read_command(client)
-    cmd_str = client.socket.readline
+    cmd_str = nil
+    @mutex.synchronize { cmd_str = client.socket.readline }
 
     begin
       command = nil
@@ -109,21 +117,22 @@ class ProtocolHandlerThreaded
       }
       raise if command.nil?
       $log.puts(">>>>  <#{command}> OK (:", client.id, LOG_SUCCESS)
-      command.set_server(@server)
       command
 
     rescue RuntimeError
       $log.puts(">>>>  <#{cmd_str.strip}> NOK ):", client.id, LOG_ERROR)
-      server.push_response(Job.new(client, FTPResponse500.new("'#{cmd_str.strip}': command not understood")))
+      send_response(client, FTPResponse500.new("'#{cmd_str.strip}': command not understood"))
       nil
     end
   end
 
-  # Send a response to the client
-  def send_response(response)
+  # Send a response to a client
+  def send_response(client, response)
     if response.is_a?(FTPResponse)
-      @client.socket.puts(response)
-      $log.puts("<<<<  <#{response}>", @sid, LOG_INFO)
+      @respmutex.synchronize { @responses.enq(response) }
+      @respmutex.synchronize { client.socket.puts(response) }
+      $log.puts("<<<<  <#{response}>", client.id, LOG_INFO)
     end
   end
+
 end

@@ -6,10 +6,13 @@ require_relative 'volcano_log'
 # magic values
 VOLCANO_MIN_PORT=1025
 VOLCANO_MAX_PORT=65535
+VOLCANO_MIN_WKNB=1
+VOLCANO_MAX_WKNB=8
 
 # default server settings values
 # (used only if a setting has not been defined
 # either with CLI args or config file)
+VOLCANO_DEFAULT_WKNB = 4
 VOLCANO_DEFAULT_BIND = '127.0.0.1'
 VOLCANO_DEFAULT_PORT = 4242
 
@@ -21,6 +24,7 @@ class VolcanoSettings
 
   def initialize
     @settings = {
+        worker_nb: VOLCANO_DEFAULT_WKNB,
         bind_ip: VOLCANO_DEFAULT_BIND,
         external_ip: VOLCANO_DEFAULT_BIND,
         port: VOLCANO_DEFAULT_PORT,
@@ -37,6 +41,14 @@ class VolcanoSettings
   end
 
   private
+  def set_worker_nb(n)
+    if n.to_i >= VOLCANO_MIN_WKNB && n.to_i <= VOLCANO_MAX_WKNB
+      @settings[:worker_nb] = n.to_i
+    else
+      VolcanoLog.log("Ignoring bad value '#{n}'", 0, LOG_ERROR)
+    end
+  end
+
   def set_bind_ip(bind)
     begin
       ip = IPAddr.new(bind)
@@ -101,6 +113,7 @@ class VolcanoSettings
     begin
       return unless File.exists?(VOLCANO_CONFIG_FILE_PATH)
       cfg = YAML.load_file(VOLCANO_CONFIG_FILE_PATH)
+      set_worker_nb(cfg['worker_nb']) if cfg.keys.include?('worker_nb')
       set_bind_ip(cfg['bind_ip']) if cfg.keys.include?('bind_ip')
       set_external_ip(cfg['external_ip']) if cfg.keys.include?('external_ip')
       set_port(cfg['port']) if cfg.keys.include?('port')
@@ -116,6 +129,9 @@ class VolcanoSettings
       OptionParser.new { |opts|
         opts.banner = 'Usage: ./volcano_ftp.rb [options]'
 
+        opts.on('-w', '--workers NB') { |n|
+          set_worker_nb(n)
+        }
         opts.on('-b', '--bind HOSTNAME_OR_IP') { |bind|
           set_bind_ip(bind)
         }

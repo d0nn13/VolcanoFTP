@@ -16,4 +16,8 @@ class Job
   def do
       @request.do(@client)
   end
+
+  def to_s
+    "#{client} -> <#{request}>"
+  end
 end

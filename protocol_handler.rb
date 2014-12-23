@@ -89,8 +89,6 @@ class ProtocolHandlerThreaded
         QUIT: {obj: FTPCommandQuit, pattern: /^QUIT\s*$/i}
     }
     @mutex = Mutex.new
-    @responses = Queue.new
-    @respmutex = Mutex.new
   end
 
   public
@@ -129,8 +127,7 @@ class ProtocolHandlerThreaded
   # Send a response to a client
   def send_response(client, response)
     if response.is_a?(FTPResponse)
-      @respmutex.synchronize { @responses.enq(response) }
-      @respmutex.synchronize { client.socket.puts(response) }
+      @mutex.synchronize { client.socket.puts(response) }
       $log.puts("<<<<  <#{response}>", client.id, LOG_INFO)
     end
   end

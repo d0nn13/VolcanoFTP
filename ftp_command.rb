@@ -211,13 +211,13 @@ class FTPCommandStor < FTPCommand
       raise FTP550 unless FileTest.writable?(session.sys_path(dest).dirname)
       @ph.send_response(client, FTPResponse.new(150, 'File status OK.'))
 
-      $log.puts(" -- Starting reception to '#{dest}' --", session.sid)
+      $log.puts(" -- Starting reception to '#{dest}' --", client.id)
       data = session.dtp.recv
 
       raise FTP426 if data.nil?
       File.makedirs(session.sys_path(dest.dirname)) unless Dir.exists?(session.sys_path(dest).dirname)
       File.write(session.sys_path(dest), data)
-      $log.puts(" -- Reception of '#{dest}' ended --", session.sid)
+      $log.puts(" -- Reception of '#{dest}' ended --", client.id)
 
       session.stats_data[:conn][:transfer_nb] += 1  # Update stats
       session.stats_data[:transfer][:name] = dest
@@ -258,7 +258,7 @@ class FTPCommandRetr < FTPCommand
       $log.puts(" -- Starting sending of '#{path}' --", client.id)
       size = session.dtp.send(session.mode, File.binread(session.sys_path(path)))
       raise FTP426 unless size
-      $log.puts(" -- Sending of '#{path}' ended --", session.sid)
+      $log.puts(" -- Sending of '#{path}' ended --", client.id)
 
       session.stats_data[:conn][:transfer_nb] += 1  # Update stats
       session.stats_data[:transfer][:name] = path

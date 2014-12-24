@@ -24,64 +24,6 @@ class VolcanoFTP
     Signal.trap('QUIT') { exit }
     Signal.trap('TERM') { exit }
     ENV['HOME'] = '/'
-    @settings = settings.settings
-    @srv_sock = TCPServer.new(@settings[:bind_ip], @settings[:port])
-    @clients = {}
-    @inactive_time = Time.new(0)
-  end
-
-  def refresh_sessions
-    @clients.each_key { |pid|
-      @clients.delete(pid) unless Process.wait(pid, Process::WNOHANG).nil?
-    }
-  end
-
-  def run
-    $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}']")
-    $log.puts("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
-    File.open(PID_FILENAME, 'w') { |file| file.puts Process.pid.to_s }  # save pid to file
-    sid = 0
-
-    begin
-      while 1
-        refresh_sessions
-        if select([@srv_sock], nil, nil, 0.2)
-          client = @srv_sock.accept
-          $log.puts("Client connected : #{client}")
-
-          sid += 1
-          new_session = VolcanoSession.new(self, sid, client)
-
-          pid = fork {new_session.launch}
-          @clients[pid] = new_session
-        end
-      end
-    rescue SystemExit, Interrupt
-      sess_nb = @clients.length
-      unless sess_nb.zero?
-        msg = "Waiting for #{sess_nb} remaining process#{sess_nb > 1 && 'es' || ''} to finish..."
-        $log.puts(msg)
-        @clients.each_key { |pid|
-          Process.kill('TERM', pid)
-          Process.waitpid(pid)
-          @clients.delete(pid)
-        }
-      end
-      $log.puts('Leaving.')
-    ensure
-      File.delete(PID_FILENAME) if File.exists?(PID_FILENAME) # delete saved pid file
-    end
-  end
-
-end
-
-class VolcanoFTPThreaded
-  attr_reader :settings
-
-  def initialize(settings)
-    Signal.trap('QUIT') { exit }
-    Signal.trap('TERM') { exit }
-    ENV['HOME'] = '/'
     Thread.abort_on_exception = true
     @settings = settings.settings
     @srv_sock = TCPServer.new(@settings[:bind_ip], @settings[:port])
@@ -207,7 +149,7 @@ end
 begin
   s = VolcanoSettings.new
   $log = VolcanoLog.new(s)
-  VolcanoFTPThreaded.new(s).run
+  VolcanoFTP.new(s).run
 
 rescue SystemExit, Interrupt
   ;

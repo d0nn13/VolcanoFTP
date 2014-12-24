@@ -159,5 +159,6 @@ rescue Exception => e
   VolcanoLog.log("Uncaught exception: #{e.inspect} '#{e}'")
   puts e.backtrace
 ensure
+  File.delete(PID_FILENAME) if File.exists?(PID_FILENAME)
   $log.close_log unless $log.nil?
 end

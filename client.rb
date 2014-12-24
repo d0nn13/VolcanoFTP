@@ -8,7 +8,7 @@ class Client
     @socket = socket
     @id = id
     @stats_handler = nil
-    @session = VolcanoSessionThreaded.new(self)
+    @session = VolcanoSession.new(self)
   end
 
   def set_stats_handler(handler)

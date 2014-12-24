@@ -11,6 +11,11 @@ class FTPResponse
     @message = message
   end
 
+  def do(client)
+    client.socket.puts(self)
+    $log.puts("<<<<  <#{self}>", client.id, LOG_INFO)
+  end
+
   def to_s
     "#{@code.to_s} #{@message}"
   end
@@ -23,12 +28,6 @@ class FTPResponse200 < FTPResponse
   end
 end
 
-class FTPResponse250 < FTPResponse
-  def initialize(message='Requested file action completed')
-    super(250, message)
-  end
-end
-
 class FTPResponse425 < FTPResponse
   def initialize(message='Can\'t open data connection.')
     super(425, message)
@@ -38,12 +37,6 @@ end
 class FTPResponse500 < FTPResponse
   def initialize(message='Error')
     super(500, message)
-  end
-end
-
-class FTPResponse502 < FTPResponse
-  def initialize(message='Command not implemented')
-    super(502, message)
   end
 end
 
@@ -61,11 +54,10 @@ class FTPResponseFeatures < FTPResponse
   def to_s
     "#{@code}-Features\r\n#{@message}\r\n#{@code} End"
   end
-
 end
 
 class FTPResponseGreet < FTPResponse
-  def initialize(message='Welcome to VolcanoFTP server')
+  def initialize(message='Welcome to VolcanoFTP server /!\ EXPERIMENTAL VERSION DEPLOYED')
     super(220, message)
   end
 end

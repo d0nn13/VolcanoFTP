@@ -19,6 +19,7 @@ LOG_MODE_FILE = 2
 class LogException < StandardError
 end
 
+#TODO: sync log
 class VolcanoLog
   def initialize(settings)
     @mode = settings.settings[:log_mode]

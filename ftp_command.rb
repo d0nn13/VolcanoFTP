@@ -1,14 +1,17 @@
+require_relative 'protocol_handler'
 require_relative 'ftp_response'
 require_relative 'dtp'
+require_relative 'job'
 
 # Base class for all commands
 class FTPCommand
   def initialize
+    @ph = ProtocolHandlerThreaded.get_instance
     @code = 'NaC'  # "Not a Command"
     @args = []
   end
 
-  def do(session); FTPResponse502.new; end
+  def do(client); FTPResponse.new(502, 'Command not implemented'); end
   def to_s; "#{@code} #{@args}"; end
 end
 
@@ -20,7 +23,8 @@ class FTPCommandPwd < FTPCommand
     @code = 'PWD'
   end
 
-  def do(session)
+  def do(client)
+    session = client.session
     FTPResponse.new(257, "\"#{session.cwd}\"")
   end
 end
@@ -34,12 +38,13 @@ class FTPCommandCwd < FTPCommand
     @args << path unless path.nil?
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       path = session.make_path(@args)
       raise FTP550 unless Dir.exists?(session.sys_path(path))
       session.set_cwd(path)
-      FTPResponse250.new("Directory changed to #{path}")
+      FTPResponse.new(250, "Directory changed to #{path}")
 
     rescue FTP550; FTPResponse.new(550, 'CWD command failed')
     rescue => e
@@ -57,8 +62,9 @@ class FTPCommandCdup < FTPCommand
     @code = 'CDUP'
   end
 
-  def do(session)
-    FTPCommandCwd.new('..').do(session)
+  def do(client)
+    session = client.session
+    FTPCommandCwd.new('..').do(client)
   end
 end
 
@@ -72,8 +78,9 @@ class FTPCommandList < FTPCommand
     @ls_cmd = 'ls -l'
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       if @args.length.zero? == false && @args[0].match(/^-/)
         ls_args = @args[0]
         path = session.cwd
@@ -86,11 +93,11 @@ class FTPCommandList < FTPCommand
 
       ret = `#{syscall}`
 
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
+      @ph.send_response(client, FTPResponse.new(150, 'File status OK.')) if $?.exitstatus.zero?
       raise FTP426 unless session.dtp.send(session.mode, ret)
       FTPResponse.new(226, 'Closing data connection.')
 
-    rescue FTP425; FTPResponse425.new
+    rescue FTP425; FTPResponse.new(425, 'Can\'t open data connection.')
     rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
       puts self.class, e.class, e, e.backtrace
@@ -120,12 +127,13 @@ class FTPCommandDele < FTPCommand
     @args << path unless path.nil?
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       File.delete(session.sys_path(path))
-      FTPResponse250.new("File \"#{path}\" deleted")
+      FTPResponse.new(250, "File \"#{path}\" deleted")
 
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed")
     rescue => e
@@ -144,12 +152,13 @@ class FTPCommandMkd < FTPCommand
     @args << path unless path.nil?
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       path = session.make_path(@args)
       raise FTP550 if Dir.exists?(session.sys_path(path))
       Dir.mkdir(session.sys_path(path))
-      FTPResponse250.new("Directory \"#{path}\" created")
+      FTPResponse.new(250, "Directory \"#{path}\" created")
 
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (directory exists)")
     rescue => e
@@ -168,12 +177,13 @@ class FTPCommandRmd < FTPCommand
     @args << path unless path.nil?
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       path = session.make_path(@args)
       raise FTP550 unless Dir.exists?(session.sys_path(path))
       Dir.rmdir(session.sys_path(path))
-      FTPResponse250.new("Directory \"#{path}\" deleted")
+      FTPResponse.new(250, "Directory \"#{path}\" deleted")
 
     rescue Errno::ENOTEMPTY; FTPResponse.new(550, "#{@code} command failed (directory not empty)")
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (no such file or directory)")
@@ -193,26 +203,27 @@ class FTPCommandStor < FTPCommand
     @args << path unless path.nil?
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       dest = session.cwd + Pathname.new(@args[0]).basename
       raise FTP425 unless session.dtp.open
       raise FTP550 unless FileTest.writable?(session.sys_path(dest).dirname)
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
+      @ph.send_response(client, FTPResponse.new(150, 'File status OK.'))
 
-      $log.puts(" -- Starting reception to '#{dest}' --", session.sid)
+      $log.puts(" -- Starting reception to '#{dest}' --", client.id)
       data = session.dtp.recv
 
       raise FTP426 if data.nil?
       File.makedirs(session.sys_path(dest.dirname)) unless Dir.exists?(session.sys_path(dest).dirname)
       File.write(session.sys_path(dest), data)
-      $log.puts(" -- Reception of '#{dest}' ended --", session.sid)
+      $log.puts(" -- Reception of '#{dest}' ended --", client.id)
 
-      session.stats_data[:conn][:transfer_nb] += 1  # Update stats
-      session.stats_data[:transfer][:name] = dest
-      session.stats_data[:transfer][:size] = data.length # Update transferred file size for stat
-      session.stats_data[:transfer][:method] = @code # Update transferred method for stat
-      session.stats.transfered(session.stats_data)
+      # session.stats_data[:conn][:transfer_nb] += 1  # Update stats
+      # session.stats_data[:transfer][:name] = dest
+      # session.stats_data[:transfer][:size] = data.length # Update transferred file size for stat
+      # session.stats_data[:transfer][:method] = @code # Update transferred method for stat
+      # session.stats.transfered(session.stats_data)
 
       FTPResponse.new(226, 'Closing data connection.')
 
@@ -236,23 +247,24 @@ class FTPCommandRetr < FTPCommand
     @args << path unless path.nil?
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       raise FTP425 unless session.dtp.open
-      session.ph.send_response(FTPResponse.new(150, 'File status OK.'))
+      @ph.send_response(client, FTPResponse.new(150, 'File status OK.'))
 
-      $log.puts(" -- Starting sending of '#{path}' --", session.sid)
+      $log.puts(" -- Starting sending of '#{path}' --", client.id)
       size = session.dtp.send(session.mode, File.binread(session.sys_path(path)))
       raise FTP426 unless size
-      $log.puts(" -- Sending of '#{path}' ended --", session.sid)
+      $log.puts(" -- Sending of '#{path}' ended --", client.id)
 
-      session.stats_data[:conn][:transfer_nb] += 1  # Update stats
-      session.stats_data[:transfer][:name] = path
-      session.stats_data[:transfer][:size] = size # Update transfered file size for stat
-      session.stats_data[:transfer][:method] = @code # Update transferred method for stat
-      session.stats.transfered(session.stats_data)
+      # session.stats_data[:conn][:transfer_nb] += 1  # Update stats
+      # session.stats_data[:transfer][:name] = path
+      # session.stats_data[:transfer][:size] = size # Update transfered file size for stat
+      # session.stats_data[:transfer][:method] = @code # Update transferred method for stat
+      # session.stats.transfered(session.stats_data)
 
       FTPResponse.new(226, 'Closing data connection.')
 
@@ -275,8 +287,9 @@ class FTPCommandPasv < FTPCommand
     @code = 'PASV'
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       session.set_dtp(DTPPassive.new(session.settings[:external_ip]))
       FTPResponse.new(227, "Entering passive mode (#{session.dtp.conn_info})")
     rescue => e
@@ -295,12 +308,13 @@ class FTPCommandPort < FTPCommand
     @args << port.gsub(/\s/, '')  # remove spaces
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       bind = @args[0].split(',')[0..3].join('.')
       port = @args[0].split(',')[4].to_i * 256 + @args[0].split(',')[5].to_i
       session.set_dtp(DTPActive.new(bind, port))
-      FTPResponse200.new('Entered active mode')
+      FTPResponse.new(200, 'Entered active mode')
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
@@ -316,7 +330,7 @@ class FTPCommandSyst < FTPCommand
     @code = 'SYST'
   end
 
-  def do(session)
+  def do(client)
     FTPResponseSystem.new
   end
 end
@@ -329,7 +343,7 @@ class FTPCommandFeat < FTPCommand
     @code = 'FEAT'
   end
 
-  def do(session)
+  def do(client)
     FTPResponseFeatures.new
   end
 end
@@ -343,7 +357,8 @@ class FTPCommandType < FTPCommand
     @args << arg unless arg.nil?
   end
 
-  def do(session)
+  def do(client)
+    session = client.session
     session.set_mode(@args[0]) unless @args.length.zero?
     FTPResponse200.new
   end
@@ -357,7 +372,7 @@ class FTPCommandNoop < FTPCommand
     @code = 'NOOP'
   end
 
-  def do(session)
+  def do(client)
     FTPResponse.new(200, 'Still here (:')
   end
 end
@@ -396,7 +411,7 @@ class FTPCommandQuit < FTPCommand
     @code = 'QUIT'
   end
 
-  def do(session)
+  def do(client)
     FTPResponseGoodbye.new
   end
 end

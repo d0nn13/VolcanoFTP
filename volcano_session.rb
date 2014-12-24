@@ -6,61 +6,13 @@ require_relative 'volcano_stats'
 
 
 class VolcanoSession
-  attr_reader :sid, :settings, :cwd, :mode, :ph, :dtp, :stats, :stats_data
+  attr_reader :settings, :cwd, :mode, :dtp
 
-  def initialize(server, id, client)
-    @sid = id
-    @settings = server.settings
-
-    @client = client
-    @ph = ProtocolHandler.new(@client, @sid)
+  def initialize(client)
+    @settings = client.server.settings
     @dtp = nil
-
     @cwd = Pathname.new('/')
     @mode = 'A'
-
-    @stats = VolcanoStats.new
-    @stats_data = {
-      conn: {user: @client, duration: 0, transfer_nb: 0, start_time: Time.now},
-      transfer: {name: '', speed: 0, size: 0, method: ''}
-    } 
-  end
-
-  def launch
-    $log.puts('New process spawn', @sid)
-    @ph.send_response(FTPResponseGreet.new)
-
-    begin
-      while 1
-        command = @ph.read_command(@client.readline)
-
-        unless command.nil?
-          @ph.send_response(command.do(self))
-          raise EOFError if command.is_a?(FTPCommandQuit)
-        end
-      end
-
-    rescue SystemExit, Interrupt
-      @stats_data[:conn][:duration] = Time.now
-      @stats.connexion(@stats_data)
-
-      msg = 'Terminating session'
-      $log.puts(msg, @sid)
-      @ph.send_response(FTPResponseGoodbye.new)
-
-      reset_dtp
-      @client.close
-
-    rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
-      @stats_data[:conn][:duration] = Time.now
-      @stats.connexion(@stats_data)
-
-      msg = 'Client disconnected'
-      $log.puts(msg, @sid)
-     
-      reset_dtp
-      @client.close
-    end
   end
 
   def set_cwd(path)
@@ -96,7 +48,7 @@ class VolcanoSession
   end
 
   def sys_path(path)
-    path.sub('/', settings[:root_dir].to_s + '/')
+    path.sub('/', @settings[:root_dir].to_s + '/')
   end
-
 end
+

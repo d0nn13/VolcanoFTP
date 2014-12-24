@@ -28,12 +28,6 @@ class FTPResponse200 < FTPResponse
   end
 end
 
-class FTPResponse250 < FTPResponse
-  def initialize(message='Requested file action completed')
-    super(250, message)
-  end
-end
-
 class FTPResponse425 < FTPResponse
   def initialize(message='Can\'t open data connection.')
     super(425, message)
@@ -43,12 +37,6 @@ end
 class FTPResponse500 < FTPResponse
   def initialize(message='Error')
     super(500, message)
-  end
-end
-
-class FTPResponse502 < FTPResponse
-  def initialize(message='Command not implemented')
-    super(502, message)
   end
 end
 

@@ -11,7 +11,7 @@ class FTPCommand
     @args = []
   end
 
-  def do(client); FTPResponse502.new; end
+  def do(client); FTPResponse.new(502, 'Command not implemented'); end
   def to_s; "#{@code} #{@args}"; end
 end
 
@@ -44,7 +44,7 @@ class FTPCommandCwd < FTPCommand
       path = session.make_path(@args)
       raise FTP550 unless Dir.exists?(session.sys_path(path))
       session.set_cwd(path)
-      FTPResponse250.new("Directory changed to #{path}")
+      FTPResponse.new(250, "Directory changed to #{path}")
 
     rescue FTP550; FTPResponse.new(550, 'CWD command failed')
     rescue => e
@@ -97,7 +97,7 @@ class FTPCommandList < FTPCommand
       raise FTP426 unless session.dtp.send(session.mode, ret)
       FTPResponse.new(226, 'Closing data connection.')
 
-    rescue FTP425; FTPResponse425.new
+    rescue FTP425; FTPResponse.new(425, 'Can\'t open data connection.')
     rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
       puts self.class, e.class, e, e.backtrace
@@ -133,7 +133,7 @@ class FTPCommandDele < FTPCommand
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       File.delete(session.sys_path(path))
-      FTPResponse250.new("File \"#{path}\" deleted")
+      FTPResponse.new(250, "File \"#{path}\" deleted")
 
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed")
     rescue => e
@@ -158,7 +158,7 @@ class FTPCommandMkd < FTPCommand
       path = session.make_path(@args)
       raise FTP550 if Dir.exists?(session.sys_path(path))
       Dir.mkdir(session.sys_path(path))
-      FTPResponse250.new("Directory \"#{path}\" created")
+      FTPResponse.new(250, "Directory \"#{path}\" created")
 
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (directory exists)")
     rescue => e
@@ -183,7 +183,7 @@ class FTPCommandRmd < FTPCommand
       path = session.make_path(@args)
       raise FTP550 unless Dir.exists?(session.sys_path(path))
       Dir.rmdir(session.sys_path(path))
-      FTPResponse250.new("Directory \"#{path}\" deleted")
+      FTPResponse.new(250, "Directory \"#{path}\" deleted")
 
     rescue Errno::ENOTEMPTY; FTPResponse.new(550, "#{@code} command failed (directory not empty)")
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (no such file or directory)")
@@ -314,7 +314,7 @@ class FTPCommandPort < FTPCommand
       bind = @args[0].split(',')[0..3].join('.')
       port = @args[0].split(',')[4].to_i * 256 + @args[0].split(',')[5].to_i
       session.set_dtp(DTPActive.new(bind, port))
-      FTPResponse200.new('Entered active mode')
+      FTPResponse.new(200, 'Entered active mode')
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new

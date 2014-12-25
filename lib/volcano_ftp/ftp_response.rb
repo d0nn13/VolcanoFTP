@@ -44,7 +44,7 @@ class FTPResponseFeatures < FTPResponse
 end
 
 class FTPResponseGreet < FTPResponse
-  def initialize(message='Welcome to VolcanoFTP server /!\ EXPERIMENTAL VERSION DEPLOYED')
+  def initialize(message='Welcome to d0nn13 FTP yo!!')
     super(220, message)
   end
 end

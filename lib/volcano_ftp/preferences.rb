@@ -17,7 +17,7 @@ VOLCANO_DEFAULT_BIND = '127.0.0.1'
 VOLCANO_DEFAULT_PORT = 4242
 
 # paths
-VOLCANO_CONFIG_FILE_PATH = './config.yml'
+VOLCANO_CONFIG_FILE_PATH = 'data/config.yml'
 
 class Preferences
 

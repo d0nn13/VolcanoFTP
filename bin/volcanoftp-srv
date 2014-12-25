@@ -1,3 +1,5 @@
 #!/usr/bin/env ruby
 
+Dir.chdir("#{File.dirname($0)}/..")
+
 require_relative '../lib/volcano_ftp'

@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 require 'socket'
 require 'set'
 require_relative 'volcano_ftp/logger'
@@ -8,7 +6,7 @@ require_relative 'volcano_ftp/client'
 require_relative 'volcano_ftp/worker'
 require_relative 'volcano_ftp/exception'
 
-PID_FILENAME = '.volcano.pid'
+PID_FILENAME = 'data/.volcano.pid'
 #$DEBUG = true
 
 class VolcanoFTP
@@ -149,5 +147,6 @@ rescue Exception => e
   VolcanoLog.log("Uncaught exception: #{e.inspect} '#{e}'")
   puts e.backtrace
 ensure
+  File.delete(PID_FILENAME) if File.exists?(PID_FILENAME)
   $log.close_log unless $log.nil?
 end

@@ -77,12 +77,13 @@ class VolcanoFTP
           sleep(0.1); next
         end
 
-        requesters = client_select_read
-        if requesters.length.zero?
-          sleep(0.1); next
-        end
+        clients = @clients[:mutex].synchronize {
+          c = @clients[:pool].dup
+          c.freeze
+        }
 
-        requesters.each { |c|
+        clients.each { |c|
+          next unless c.requesting?
           cmd = @ph.read_command(c)
           push_job(Job.new(c, cmd)) unless cmd.nil?
         }
@@ -95,28 +96,6 @@ class VolcanoFTP
       end
 
     end
-  end
-
-  def client_select_read
-    read_ready = []
-    @clients[:mutex].synchronize {
-      @clients[:pool].each { |c|
-        next if select([c.socket], nil, nil, 0).nil?
-        read_ready << c
-      }
-    }
-    read_ready
-  end
-
-  def client_select_write
-    write_ready = []
-    @clients[:mutex].synchronize {
-      @clients[:pool].each { |c|
-        next if select(nil, [c.socket], nil, 0).nil?
-        write_ready << c
-      }
-    }
-    write_ready
   end
 
   def nb_client

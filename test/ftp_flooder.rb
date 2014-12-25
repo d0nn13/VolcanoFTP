@@ -4,8 +4,8 @@ require 'socket'
 
 class FTPFlooder
   def initialize(ip, port)
-    @ip = '127.0.0.1' if ip.nil?
-    @port = 4000 if port.nil?
+    @ip = ip.nil? && '127.0.0.1' || ip
+    @port = port.nil? && 4000 || port.to_i
 
     @socket = TCPSocket.new(@ip, @port)
     @dtpsock = nil
@@ -49,6 +49,6 @@ end
 begin
   f = FTPFlooder.new(ARGV[0], ARGV[1])
   f.run
-rescue Interrupt, Exception
+  rescue Interrupt
   ;
 end

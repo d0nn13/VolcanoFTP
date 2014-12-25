@@ -19,7 +19,6 @@ LOG_MODE_FILE = 2
 class LogException < StandardError
 end
 
-#TODO: sync log
 class VolcanoLog
   def initialize(preferences)
     @mode = preferences[:log_mode]
@@ -33,6 +32,7 @@ class VolcanoLog
       (0..100).each { @file.putc('==') }
       @file.puts("\n\n")
     end
+    @mutex = Mutex.new
   end
 
   def self.log(msg, cid=0, level=0)
@@ -43,7 +43,7 @@ class VolcanoLog
       when LOG_ERROR; color = LOG_RED
       else; color = LOG_RESET
     end
-    puts puts "#{color}#{Time.now}:#{id_str} #{msg.strip}#{LOG_RESET}"
+    $stdout.puts "#{color}#{Time.now}:#{id_str} #{msg.strip}#{LOG_RESET}"
   end
 
   def puts(msg, cid=nil, level=0)
@@ -55,8 +55,10 @@ class VolcanoLog
       when LOG_ERROR; color = LOG_RED; stream = $stderr
       else; color = LOG_RESET
     end
-    stream.puts "#{color}#{Time.now}:#{id_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
-    @file.puts "#{Time.now}:#{id_str} #{msg}" unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
+    @mutex.synchronize {
+      stream.puts "#{color}#{Time.now}:#{id_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
+      @file.puts "#{Time.now}:#{id_str} #{msg}" unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
+    }
   end
 
   def close_log

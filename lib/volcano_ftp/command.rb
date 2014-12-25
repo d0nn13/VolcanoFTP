@@ -1,12 +1,15 @@
+require_relative 'logger'
+require_relative 'exception'
 require_relative 'protocol_handler'
 require_relative 'ftp_response'
 require_relative 'dtp'
-require_relative 'job'
+
+#TODO: clean exception reporting
 
 # Base class for all commands
 class FTPCommand
   def initialize
-    @ph = ProtocolHandlerThreaded.get_instance
+    @ph = ProtocolHandler.get_instance
     @code = 'NaC'  # "Not a Command"
     @args = []
   end
@@ -97,6 +100,7 @@ class FTPCommandList < FTPCommand
       raise FTP426 unless session.dtp.send(session.mode, ret)
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue ClientConnectionLost; nil
     rescue FTP425; FTPResponse.new(425, 'Can\'t open data connection.')
     rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e
@@ -227,6 +231,7 @@ class FTPCommandStor < FTPCommand
 
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue ClientConnectionLost; nil
     rescue FTP550; FTPResponse(550, 'Destination dir not writable')
     rescue FTP425; FTPResponse425.new
     rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
@@ -268,6 +273,7 @@ class FTPCommandRetr < FTPCommand
 
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue ClientConnectionLost; nil
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")
     rescue FTP425; FTPResponse425.new
     rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
@@ -290,7 +296,7 @@ class FTPCommandPasv < FTPCommand
   def do(client)
     begin
       session = client.session
-      session.set_dtp(DTPPassive.new(session.settings[:external_ip]))
+      session.set_dtp(DTPPassive.new(session.preferences[:external_ip]))
       FTPResponse.new(227, "Entering passive mode (#{session.dtp.conn_info})")
     rescue => e
       puts self.class, e.class, e, e.backtrace

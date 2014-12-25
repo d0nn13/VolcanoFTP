@@ -1,6 +1,6 @@
 require 'sqlite3'
 
-class VolcanoStats
+class StatHelper
 
   def initialize
   	begin

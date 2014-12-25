@@ -2,33 +2,26 @@
 
 require 'socket'
 require 'set'
-require_relative 'volcano_log'
-require_relative 'volcano_settings'
-require_relative 'volcano_session'
-require_relative 'client'
-require_relative 'worker'
+require_relative 'volcano_ftp/logger'
+require_relative 'volcano_ftp/preferences'
+require_relative 'volcano_ftp/client'
+require_relative 'volcano_ftp/worker'
+require_relative 'volcano_ftp/exception'
 
 PID_FILENAME = '.volcano.pid'
 #$DEBUG = true
 
-class TCPSocket
-  def to_s
-    "#{peeraddr(:hostname)[2]} (#{peeraddr(:hostname)[3]}:#{peeraddr(:hostname)[1]})"
-  end
-end
-
 class VolcanoFTP
-  attr_reader :settings
+  attr_reader :preferences
 
-  def initialize(settings)
+  def initialize(prefs)
     Signal.trap('QUIT') { exit }
     Signal.trap('TERM') { exit }
     ENV['HOME'] = '/'
     Thread.abort_on_exception = true
-    @settings = settings.settings
-    @srv_sock = TCPServer.new(@settings[:bind_ip], @settings[:port])
-    @ph = ProtocolHandlerThreaded.get_instance
-    @workers = []
+    @preferences = prefs
+    @srv_sock = TCPServer.new(@preferences[:bind_ip], @preferences[:port])
+    @ph = ProtocolHandler.get_instance
     @jobs = Queue.new
     @clients = {
         mutex: Mutex.new,
@@ -37,20 +30,18 @@ class VolcanoFTP
   end
 
   def run
-    $log.puts("Starting VolcanoFTP. [Root dir: '#{settings[:root_dir]}']")
-    $log.puts("Bound to address #{@settings[:bind_ip]}, listening on port #{@settings[:port]}")
+    $log.puts("Starting VolcanoFTP. [Root dir: '#{@preferences[:root_dir]}']")
+    $log.puts("Bound to address #{@preferences[:bind_ip]}, listening on port #{@preferences[:port]}")
     File.open(PID_FILENAME, 'w') { |file| file.puts Process.pid.to_s }  # save pid to file
 
     wf = WorkerFactory.get_instance(self)
     cf = ClientFactory.get_instance(self)
+    workers = []
 
-    n = nil
-    (1..@settings[:worker_nb]).each { |it|
-      w = wf.build_worker
-      @workers << Thread.new { w.handle_job }
-      n = it
+    (1..@preferences[:worker_nb]).each {
+      workers << Thread.new { wf.build_worker.run }
     }
-    $log.puts("* #{n} worker threads created")
+    $log.puts("* #{workers.length} worker threads created")
 
     while 1
       begin
@@ -64,7 +55,7 @@ class VolcanoFTP
           push_job(Job.new(c, cmd)) unless cmd.nil?
         }
       rescue ClientConnectionLost => e
-        handle_clientconnectionlost(e)
+        handle_clientconnectionlost(e.client)
       ensure
         sleep(0.05)
       end
@@ -77,7 +68,7 @@ class VolcanoFTP
     return unless select([@srv_sock], nil, nil, 0)
     client = cf.build_client(@srv_sock.accept)
     n = push_client(client)
-    $log.puts("! Client connected: #{client.socket} (Total: #{n})")
+    $log.puts("! Client connected: #{client} (Total: #{n})")
     @ph.send_response(client, FTPResponseGreet.new)
     @clients[:pool]
   end
@@ -138,16 +129,15 @@ class VolcanoFTP
     @jobs.pop
   end
 
-  def handle_clientconnectionlost(e)
-    n = delete_client(e.client)
-    $log.puts("! Client disconnected: #{e.client} (Total: #{n})")
+  def handle_clientconnectionlost(client)
+    n = delete_client(client)
+    $log.puts("! Client disconnected: #{client} (Total: #{n})")
   end
 end
 
 
-
 begin
-  s = VolcanoSettings.new
+  s = Preferences.new.get
   $log = VolcanoLog.new(s)
   VolcanoFTP.new(s).run
 
@@ -159,6 +149,5 @@ rescue Exception => e
   VolcanoLog.log("Uncaught exception: #{e.inspect} '#{e}'")
   puts e.backtrace
 ensure
-  File.delete(PID_FILENAME) if File.exists?(PID_FILENAME)
   $log.close_log unless $log.nil?
 end

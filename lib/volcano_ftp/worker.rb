@@ -1,3 +1,4 @@
+require_relative 'logger'
 require_relative 'protocol_handler'
 
 class Worker
@@ -6,20 +7,20 @@ class Worker
   def initialize(server, id)
     @server = server
     @id = id
-    @ph = ProtocolHandlerThreaded.get_instance
+    @ph = ProtocolHandler.get_instance
   end
 
-  def handle_job
+  def run
     while 1
       begin
-        req = @server.pop_job
-        unless req.nil?
-          $log.puts("* Worker ##{@id}: #{req}")
-          @ph.send_response(req.client, req.do)
+        job = @server.pop_job
+        unless job.nil?
+          $log.puts("* Worker ##{@id}: #{job}")
+          @ph.send_response(job.requester, job.do)
         end
 
       rescue ClientConnectionLost => e
-        @server.handle_clientconnectionlost(e)
+        @server.handle_clientconnectionlost(e.client)
       end
     end
   end

@@ -41,56 +41,61 @@ class VolcanoFTP
     }
     $log.puts("* #{workers.length} worker threads created")
 
-    while 1
-      begin
-        accept(cf)
-        if nb_client.zero?
-          sleep(0.1); next
-        end
+    accept_thd = Thread.new { accept(cf) }
+    handle_requests_thd = Thread.new { handle_requests }
 
-        client_select_read.each { |c|
-          cmd = @ph.read_command(c)
-          push_job(Job.new(c, cmd)) unless cmd.nil?
-        }
-      rescue ClientConnectionLost => e
-        handle_clientconnectionlost(e.client)
-      ensure
-        sleep(0.05)
-      end
-    end
-
+    workers.each { |w| w.join }
+    accept_thd.join
+    handle_requests_thd.join
   end
 
   private
   def accept(cf)
-    return unless select([@srv_sock], nil, nil, 0)
-    client = cf.build_client(@srv_sock.accept)
-    n = push_client(client)
-    $log.puts("! Client connected: #{client} (Total: #{n})", client.id)
-    @ph.send_response(client, FTPResponseGreet.new)
-    @clients[:pool]
+    while 1
+
+      begin
+        next if select([@srv_sock], nil, nil, 0.1).nil?
+        client = cf.build_client(@srv_sock.accept)
+        n = push_client(client)
+        $log.puts("! Client connected: #{client} (Total: #{n})", client.id)
+        @ph.send_response(client, FTPResponseGreet.new)
+        @clients[:pool]
+
+      rescue Exception => e
+        $log.puts('Exception caught in accept thread')
+        raise e
+      end
+
+    end
   end
 
-  def client_select_read
-    read_ready = []
-    @clients[:mutex].synchronize {
-      @clients[:pool].each { |c|
-        next unless select([c.socket], nil, nil, 0)
-        read_ready << c
-      }
-    }
-    read_ready
-  end
+  def handle_requests
+    while 1
 
-  def client_select_write
-    write_ready = []
-    @clients[:mutex].synchronize {
-      @clients[:pool].each { |c|
-        next unless select(nil, [c.socket], nil, 0)
-        write_ready << c
-      }
-    }
-    write_ready
+      begin
+        if nb_client.zero?
+          sleep(0.1); next
+        end
+
+        clients = @clients[:mutex].synchronize {
+          c = @clients[:pool].dup
+          c.freeze
+        }
+
+        clients.each { |c|
+          next unless c.requesting?
+          cmd = @ph.read_command(c)
+          push_job(Job.new(c, cmd)) unless cmd.nil?
+        }
+
+      rescue ClientConnectionLost => e
+        handle_clientconnectionlost(e.client)
+      rescue Exception => e
+        $log.puts('Exception caught in handle_request thread')
+        raise e
+      end
+
+    end
   end
 
   def nb_client

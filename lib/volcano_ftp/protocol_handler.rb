@@ -52,11 +52,9 @@ class ProtocolHandler
         end
       }
       raise if command.nil?
-      #$log.puts(">>>>  <#{command}> OK (:", client.id, LOG_SUCCESS)
       command
 
     rescue RuntimeError
-      #$log.puts(">>>>  <#{cmd_str.strip}> NOK ):", client.id, LOG_ERROR)
       send_response(client, FTPResponse500.new("'#{cmd_str.strip}': command not understood"))
       nil
 

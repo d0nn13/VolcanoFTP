@@ -16,6 +16,10 @@ class Client
     @stats_handler = handler
   end
 
+  def requesting?
+    !select([@socket]).length.zero?
+  end
+
   def to_s
     "#{@socket_info}"
   end

@@ -101,7 +101,7 @@ class VolcanoFTP
     read_ready = []
     @clients[:mutex].synchronize {
       @clients[:pool].each { |c|
-        next unless select([c.socket], nil, nil, 0)
+        next if select([c.socket], nil, nil, 0).nil?
         read_ready << c
       }
     }
@@ -112,7 +112,7 @@ class VolcanoFTP
     write_ready = []
     @clients[:mutex].synchronize {
       @clients[:pool].each { |c|
-        next unless select(nil, [c.socket], nil, 0)
+        next if select(nil, [c.socket], nil, 0).nil?
         write_ready << c
       }
     }

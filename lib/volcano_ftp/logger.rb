@@ -43,7 +43,7 @@ class VolcanoLog
       when LOG_ERROR; color = LOG_RED
       else; color = LOG_RESET
     end
-    $stdout.puts "#{color}#{Time.now}:#{id_str} #{msg.strip}#{LOG_RESET}"
+    $stdout.puts "#{color}#{Time.now.strftime('%Y-%m-%d %H:%M:%S.%6N')}:#{id_str} #{msg.strip}#{LOG_RESET}"
   end
 
   def puts(msg, cid=nil, level=0)
@@ -56,8 +56,8 @@ class VolcanoLog
       else; color = LOG_RESET
     end
     @mutex.synchronize {
-      stream.puts "#{color}#{Time.now}:#{id_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
-      @file.puts "#{Time.now}:#{id_str} #{msg}" unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
+      stream.puts "#{color}#{Time.now.strftime('%Y-%m-%d %H:%M:%S.%6N')}:#{id_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
+      @file.puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S.%6N')}:#{id_str} #{msg}" unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
     }
   end
 

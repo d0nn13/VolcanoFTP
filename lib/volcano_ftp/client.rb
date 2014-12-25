@@ -17,7 +17,7 @@ class Client
   end
 
   def to_s
-    "#{@socket_info}(##{@id})"
+    "#{@socket_info}"
   end
 end
 

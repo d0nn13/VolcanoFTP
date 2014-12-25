@@ -49,6 +49,6 @@ end
 begin
   f = FTPFlooder.new(ARGV[0], ARGV[1])
   f.run
-rescue Interrupt
+rescue Interrupt, Exception
   ;
 end

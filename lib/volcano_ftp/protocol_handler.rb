@@ -52,11 +52,11 @@ class ProtocolHandler
         end
       }
       raise if command.nil?
-      $log.puts(">>>>  <#{command}> OK (:", client.id, LOG_SUCCESS)
+      #$log.puts(">>>>  <#{command}> OK (:", client.id, LOG_SUCCESS)
       command
 
     rescue RuntimeError
-      $log.puts(">>>>  <#{cmd_str.strip}> NOK ):", client.id, LOG_ERROR)
+      #$log.puts(">>>>  <#{cmd_str.strip}> NOK ):", client.id, LOG_ERROR)
       send_response(client, FTPResponse500.new("'#{cmd_str.strip}': command not understood"))
       nil
 
@@ -71,7 +71,7 @@ class ProtocolHandler
     begin
       if response.is_a?(FTPResponse)
         client.socket.puts(response)
-        $log.puts("<<<<  <#{response}>", client.id, LOG_INFO)
+        $log.puts("- <#{response}>", client.id, LOG_INFO)
       end
 
     rescue EOFError, Errno::EPIPE, Errno::ECONNRESET

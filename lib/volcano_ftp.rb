@@ -66,7 +66,7 @@ class VolcanoFTP
     return unless select([@srv_sock], nil, nil, 0)
     client = cf.build_client(@srv_sock.accept)
     n = push_client(client)
-    $log.puts("! Client connected: #{client} (Total: #{n})")
+    $log.puts("! Client connected: #{client} (Total: #{n})", client.id)
     @ph.send_response(client, FTPResponseGreet.new)
     @clients[:pool]
   end
@@ -129,7 +129,7 @@ class VolcanoFTP
 
   def handle_clientconnectionlost(client)
     n = delete_client(client)
-    $log.puts("! Client disconnected: #{client} (Total: #{n})")
+    $log.puts("! Client disconnected: #{client} (Total: #{n})", client.id)
   end
 end
 

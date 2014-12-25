@@ -35,8 +35,8 @@ class VolcanoLog
     end
   end
 
-  def self.log(msg, sid=0, level=0)
-    id_str = sid.zero? && " [#{Process.pid}]" || " [#{Process.pid}] (##{sid})"
+  def self.log(msg, cid=0, level=0)
+    id_str = cid.nil? && '' || " [##{cid.to_s}]"
     case level
       when LOG_INFO; puts "#{Time.now}:#{id_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}"
       when LOG_SUCCESS; puts "#{Time.now}:#{id_str} #{LOG_GREEN}#{msg}#{LOG_RESET}"
@@ -45,8 +45,8 @@ class VolcanoLog
     end
   end
 
-  def puts(msg, sid=0, level=0)
-    id_str = sid.zero? && " [#{Process.pid}]" || " [#{Process.pid}] (##{sid})"
+  def puts(msg, cid=nil, level=0)
+    id_str = cid.nil? && '' || " [##{cid.to_s}]"
     case level
       when LOG_INFO
         $stdout.puts "#{Time.now}:#{id_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?

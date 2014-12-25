@@ -15,7 +15,7 @@ class Worker
       begin
         job = @server.pop_job
         unless job.nil?
-          $log.puts("* Worker ##{@id}: #{job}")
+          $log.puts("* Worker ##{@id}: #{job}", job.requester.id, LOG_SUCCESS)
           @ph.send_response(job.requester, job.do)
         end
 

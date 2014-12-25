@@ -12,6 +12,7 @@ class Worker
 
   def run
     while 1
+
       begin
         job = @server.pop_job
         unless job.nil?
@@ -22,6 +23,7 @@ class Worker
       rescue ClientConnectionLost => e
         @server.handle_clientconnectionlost(e.client)
       end
+
     end
   end
 end

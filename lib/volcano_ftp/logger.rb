@@ -38,28 +38,24 @@ class VolcanoLog
   def self.log(msg, cid=0, level=0)
     id_str = cid.nil? && '' || " [##{cid.to_s}]"
     case level
-      when LOG_INFO; puts "#{Time.now}:#{id_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}"
-      when LOG_SUCCESS; puts "#{Time.now}:#{id_str} #{LOG_GREEN}#{msg}#{LOG_RESET}"
-      when LOG_ERROR; puts "#{Time.now}:#{id_str} #{LOG_RED}#{msg}#{LOG_RESET}"
-      else; puts "#{LOG_RESET}#{Time.now}:#{id_str} #{msg.strip}#{LOG_RESET}"
+      when LOG_INFO; color = LOG_LBLUE
+      when LOG_SUCCESS; color = LOG_GREEN
+      when LOG_ERROR; color = LOG_RED
+      else; color = LOG_RESET
     end
+    puts puts "#{color}#{Time.now}:#{id_str} #{msg.strip}#{LOG_RESET}"
   end
 
   def puts(msg, cid=nil, level=0)
     id_str = cid.nil? && '' || " [##{cid.to_s}]"
+    stream = $stdout
     case level
-      when LOG_INFO
-        $stdout.puts "#{Time.now}:#{id_str} #{LOG_LBLUE}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
-
-      when LOG_SUCCESS
-        $stdout.puts "#{Time.now}:#{id_str} #{LOG_GREEN}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
-
-      when LOG_ERROR
-        $stderr.puts "#{Time.now}:#{id_str} #{LOG_RED}#{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
-
-      else
-        $stderr.puts "#{LOG_RESET}#{Time.now}:#{id_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
+      when LOG_INFO; color = LOG_LBLUE
+      when LOG_SUCCESS; color = LOG_GREEN
+      when LOG_ERROR; color = LOG_RED; stream = $stderr
+      else; color = LOG_RESET
     end
+    stream.puts "#{color}#{Time.now}:#{id_str} #{msg}#{LOG_RESET}" unless (@mode & LOG_MODE_STD).zero?
     @file.puts "#{Time.now}:#{id_str} #{msg}" unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
   end
 

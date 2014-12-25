@@ -1,18 +1,14 @@
-require_relative 'protocol_handler'
 require_relative 'dtp'
-require_relative 'ftp_command'
-require_relative 'ftp_response'
-require_relative 'volcano_stats'
+require_relative'stat_helper'
 
-
-class VolcanoSession
-  attr_reader :settings, :cwd, :mode, :dtp
+class Session
+  attr_reader :preferences, :cwd, :mode, :dtp
 
   def initialize(client)
-    @settings = client.server.settings
-    @dtp = nil
+    @preferences = client.server.preferences
     @cwd = Pathname.new('/')
     @mode = 'A'
+    @dtp = nil
   end
 
   def set_cwd(path)
@@ -48,7 +44,7 @@ class VolcanoSession
   end
 
   def sys_path(path)
-    path.sub('/', @settings[:root_dir].to_s + '/')
+    path.sub('/', @preferences[:root_dir].to_s + '/')
   end
 end
 

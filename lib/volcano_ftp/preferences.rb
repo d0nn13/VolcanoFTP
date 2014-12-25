@@ -1,7 +1,7 @@
 require 'optparse'
 require 'yaml'
 require 'ipaddr'
-require_relative 'volcano_log'
+require_relative 'logger'
 
 # magic values
 VOLCANO_MIN_PORT=1025
@@ -19,11 +19,10 @@ VOLCANO_DEFAULT_PORT = 4242
 # paths
 VOLCANO_CONFIG_FILE_PATH = './config.yml'
 
-class VolcanoSettings
-  attr_reader :settings
+class Preferences
 
   def initialize
-    @settings = {
+    @preferences = {
         worker_nb: VOLCANO_DEFAULT_WKNB,
         bind_ip: VOLCANO_DEFAULT_BIND,
         external_ip: VOLCANO_DEFAULT_BIND,
@@ -36,14 +35,18 @@ class VolcanoSettings
     @set_external = false
     config_from_file
     config_from_cli
-    @settings[:external_ip] = @settings[:bind_ip] unless @set_external
-    @settings.freeze
+    @preferences[:external_ip] = @preferences[:bind_ip] unless @set_external
+    @preferences.freeze
+  end
+
+  def get
+    @preferences
   end
 
   private
   def set_worker_nb(n)
     if n.to_i >= VOLCANO_MIN_WKNB && n.to_i <= VOLCANO_MAX_WKNB
-      @settings[:worker_nb] = n.to_i
+      @preferences[:worker_nb] = n.to_i
     else
       VolcanoLog.log("Ignoring bad value '#{n}'", 0, LOG_ERROR)
     end
@@ -55,7 +58,7 @@ class VolcanoSettings
       if ip.ipv6?
         VolcanoLog.log('Bind address: IPv6 is not supported, ignoring value', 0, LOG_ERROR)
       else
-        @settings[:bind_ip] = ip.to_s
+        @preferences[:bind_ip] = ip.to_s
       end
     rescue; VolcanoLog.log("Bind address: Invalid IPv4 address '#{bind}', ignoring value", 0, LOG_ERROR)
     end
@@ -67,7 +70,7 @@ class VolcanoSettings
       if ip.ipv6?
         VolcanoLog.log('External IP: IPv6 is not supported, ignoring value', 0, LOG_ERROR)
       else
-        @settings[:external_ip] = ip.to_s
+        @preferences[:external_ip] = ip.to_s
         @set_external = true
       end
     rescue; VolcanoLog.log("External IP: Invalid IPv4 address '#{bind}', ignoring value", 0, LOG_ERROR)
@@ -76,7 +79,7 @@ class VolcanoSettings
 
   def set_port(port)
     if port.to_i >= VOLCANO_MIN_PORT && port.to_i <= VOLCANO_MAX_PORT
-      @settings[:port] = port.to_i
+      @preferences[:port] = port.to_i
     else
       VolcanoLog.log("Ignoring bad value '#{port}'", 0, LOG_ERROR)
     end
@@ -85,7 +88,7 @@ class VolcanoSettings
   def set_root_dir(path)
     root = Pathname.new(path).expand_path
     if Dir.exists?(root)
-      @settings[:root_dir] = root
+      @preferences[:root_dir] = root
     else
       VolcanoLog.log("Directory '#{root}' does not exists, falling back to default value.", 0, LOG_ERROR)
     end
@@ -93,9 +96,9 @@ class VolcanoSettings
 
   def set_log_mode(mode)
     if mode == LOG_MODE_STD || mode == LOG_MODE_FILE
-      @settings[:log_mode] |= mode
+      @preferences[:log_mode] |= mode
     elsif mode == LOG_MODE_SILENT
-      @settings[:log_mode] &= ~LOG_MODE_STD
+      @preferences[:log_mode] &= ~LOG_MODE_STD
     else
       VolcanoLog.log('Log mode not set')
     end
@@ -103,7 +106,7 @@ class VolcanoSettings
 
   def set_log_file(path)
     #if File.writable?(path)
-      @settings[:log_path] = path
+      @preferences[:log_path] = path
     #else
      # VolcanoLog.log('File not writable')
     #end

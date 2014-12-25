@@ -21,10 +21,10 @@ end
 
 #TODO: sync log
 class VolcanoLog
-  def initialize(settings)
-    @mode = settings.settings[:log_mode]
+  def initialize(preferences)
+    @mode = preferences[:log_mode]
     @file = nil
-    path = settings.settings[:log_path]
+    path = preferences[:log_path]
     unless (@mode & LOG_MODE_FILE).zero?
       raise LogException.new('VolcanoLog: No log file path specified') if path.nil?
       @file = File.new(path, 'w')

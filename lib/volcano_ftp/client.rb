@@ -1,14 +1,15 @@
-require_relative 'volcano_session'
+require_relative 'session'
 
 class Client
   attr_reader :server, :socket, :session, :id
 
-  def initialize(server, id, socket)
+  def initialize(server, socket, id)
     @server = server
     @socket = socket
+    @socket_info = "#{socket.peeraddr(:hostname)[2]} (#{socket.peeraddr(:hostname)[3]}:#{socket.peeraddr(:hostname)[1]})"
+    @session = Session.new(self)
     @id = id
     @stats_handler = nil
-    @session = VolcanoSession.new(self)
   end
 
   def set_stats_handler(handler)
@@ -16,7 +17,7 @@ class Client
   end
 
   def to_s
-    "#{socket}(##{@id})"
+    "#{@socket_info}(##{@id})"
   end
 end
 
@@ -28,7 +29,7 @@ class ClientFactory
   end
 
   def build_client(socket)
-    c = Client.new(@server, @id, socket)
+    c = Client.new(@server, socket, @id)
     @id += 1
     c
   end

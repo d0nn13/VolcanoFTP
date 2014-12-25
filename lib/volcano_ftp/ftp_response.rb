@@ -1,25 +1,12 @@
-class FTP400 < StandardError; end
-class FTP425 < FTP400; end
-class FTP426 < FTP400; end
-
-class FTP500 < StandardError; end
-class FTP550 < FTP500; end
-
 class FTPResponse
   def initialize(code, message)
     @code = code
     @message = message
   end
 
-  def do(client)
-    client.socket.puts(self)
-    $log.puts("<<<<  <#{self}>", client.id, LOG_INFO)
-  end
-
   def to_s
-    "#{@code.to_s} #{@message}"
+    "#{@code} #{@message}"
   end
-
 end
 
 class FTPResponse200 < FTPResponse

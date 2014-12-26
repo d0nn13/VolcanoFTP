@@ -62,19 +62,11 @@ class FTPCommandCwd < FTPCommand
 end
 
 # ==== CDUP ====
-# Runs 'CWD ..'
-# TODO: use much polymorphism
-class FTPCommandCdup < FTPCommand
+# CWD ..
+class FTPCommandCdup < FTPCommandCwd
   def initialize(arg)
-    super()
+    super('..')
     @code = 'CDUP'
-  end
-
-  def do(client)
-    session = client.session
-    FTPCommandCwd.new('..').do(client)
-  ensure
-    session.set_previous_cmd(self)
   end
 end
 

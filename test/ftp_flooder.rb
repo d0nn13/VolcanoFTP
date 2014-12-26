@@ -39,6 +39,8 @@ class FTPFlooder
       puts "#{it}\n\n"
       @dtpsock.close
     }
+    sleep 3
+    @socket.close
   end
 
   def get_port(resp)

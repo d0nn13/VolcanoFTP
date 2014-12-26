@@ -1,6 +1,8 @@
 require_relative 'logger'
 require_relative 'protocol_handler'
 
+WORKER_THREAD_DELAY = 5e-5
+
 class Worker
   attr_reader :id
 
@@ -12,6 +14,7 @@ class Worker
 
   def run
     while 1
+      loop_ts = Time.now
 
       begin
         job = @server.pop_job
@@ -22,6 +25,9 @@ class Worker
 
       rescue ClientConnectionLost => e
         @server.handle_clientconnectionlost(e.client)
+      ensure
+        dly = Time.now - loop_ts
+        sleep(WORKER_THREAD_DELAY - dly) if dly < WORKER_THREAD_DELAY
       end
 
     end

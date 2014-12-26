@@ -17,7 +17,7 @@ class Client
   end
 
   def requesting?
-    !select([@socket]).length.zero?
+    !select([@socket], nil, nil, 0).nil?
   end
 
   def to_s

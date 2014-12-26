@@ -6,8 +6,14 @@ require_relative 'volcano_ftp/client'
 require_relative 'volcano_ftp/worker'
 require_relative 'volcano_ftp/exception'
 
-PID_FILENAME = 'data/.volcano.pid'
 #$DEBUG = true
+PID_FILENAME = 'data/.volcano.pid'
+
+IDLE_DELAY = 0.2
+ACCEPT_THREAD_DELAY = 0.1
+HANDLE_REQUEST_THREAD_DELAY = 0.001
+NO_REQUEST_TIMEOUT = 2
+
 
 class VolcanoFTP
   attr_reader :preferences
@@ -52,9 +58,10 @@ class VolcanoFTP
   private
   def accept(cf)
     while 1
+      loop_ts = Time.now
 
       begin
-        next if select([@srv_sock], nil, nil, 0.1).nil?
+        next if select([@srv_sock], nil, nil, 0).nil?
         client = cf.build_client(@srv_sock.accept)
         n = push_client(client)
         $log.puts("! Client connected: #{client} (Total: #{n})", client.id)
@@ -64,28 +71,43 @@ class VolcanoFTP
       rescue Exception => e
         $log.puts('Exception caught in accept thread')
         raise e
+      ensure
+        dly = Time.now - loop_ts
+        sleep(ACCEPT_THREAD_DELAY - dly) if dly < ACCEPT_THREAD_DELAY
       end
 
     end
   end
 
   def handle_requests
+    no_req_ts = Time.now
     while 1
+      loop_ts = Time.now
 
       begin
         if nb_client.zero?
-          sleep(0.1); next
+          sleep(IDLE_DELAY); next
         end
 
-        clients = @clients[:mutex].synchronize {
-          c = @clients[:pool].dup
-          c.freeze
+        requesters = @clients[:mutex].synchronize {
+          out = Set.new
+          @clients[:pool].each { |c|
+            out << c if c.requesting?
+          }
+          out
         }
 
-        clients.each { |c|
-          next unless c.requesting?
-          cmd = @ph.read_command(c)
-          push_job(Job.new(c, cmd)) unless cmd.nil?
+        if requesters.length.zero?
+          if (Time.now - no_req_ts) >= NO_REQUEST_TIMEOUT
+            sleep(IDLE_DELAY); next
+          end
+        else
+          no_req_ts = Time.now
+        end
+
+        requesters.each { |r|
+          cmd = @ph.read_command(r)
+          push_job(Job.new(r, cmd)) unless cmd.nil?
         }
 
       rescue ClientConnectionLost => e
@@ -93,6 +115,9 @@ class VolcanoFTP
       rescue Exception => e
         $log.puts('Exception caught in handle_request thread')
         raise e
+      ensure
+        dly = Time.now - loop_ts
+        sleep(HANDLE_REQUEST_THREAD_DELAY - dly) if dly < HANDLE_REQUEST_THREAD_DELAY
       end
 
     end

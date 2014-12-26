@@ -1,7 +1,7 @@
 require 'pathname'
 require_relative 'logger'
+require_relative 'exception'
 
-#TODO: clean exception reporting
 
 class DTP
   attr_reader :busy
@@ -13,13 +13,11 @@ class DTP
     @busy = false
   end
 
-
-
   def closed?; @socket.nil?; end
 
-  def open; raise 'DTP::open not implemented'; end
-  def send; raise 'DTP::send not implemented'; end
-  def recv; raise 'DTP::recv not implemented'; end
+  def open; raise DTPException.new('DTP::open not implemented'); end
+  def send; raise DTPException.new('DTP::send not implemented'); end
+  def recv; raise DTPException.new('DTP::recv not implemented'); end
 
   def close
     begin
@@ -41,7 +39,7 @@ class DTPPassive < DTP
       @bind_ip = external_ip
       @port = @socket.addr[1]
       @client = nil
-    rescue => e; raise e;
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 
@@ -49,7 +47,7 @@ class DTPPassive < DTP
     begin
       @client = @socket.accept
       true
-    rescue => e; $log.puts "<#{self.class}::open> #{e.class}: '#{e}'"; false
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 
@@ -64,11 +62,11 @@ class DTPPassive < DTP
       end
       @busy = false
       nb
-    rescue => e; $log.puts "<#{self.class}::send> #{e.class}: '#{e}'"; false
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 
-  def recv #TODO: handle modes
+  def recv # TODO: handle modes
     begin
       raise 'Client socket closed' if @client.nil?
       raise 'Timeout' if select([@client], nil, nil, 20).nil?
@@ -76,7 +74,7 @@ class DTPPassive < DTP
       data = @client.read
       @busy = false
       data
-    rescue => e; $log.puts "<#{self.class}::recv> #{e.class}: '#{e}'"; nil
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 
@@ -89,7 +87,7 @@ class DTPPassive < DTP
       @port = nil
       @bind_ip = nil
       true
-    rescue => e; $log.puts "<#{self.class}::close> #{e.class}: '#{e}'"; false
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 
@@ -109,7 +107,7 @@ class DTPActive < DTP
     begin
       @socket = TCPSocket.new(@bind_ip, @port)
       true
-    rescue => e; $log.puts "<#{self.class}::open> #{e.class}: '#{e}'"; false
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 
@@ -124,7 +122,7 @@ class DTPActive < DTP
       end
       @busy = false
       nb
-    rescue => e; $log.puts "<#{self.class}::send> #{e.class}: '#{e}'"; false
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 
@@ -136,7 +134,7 @@ class DTPActive < DTP
       data = @socket.read
       @busy = false
       data
-    rescue => e; $log.puts "<#{self.class}::recv> #{e.class}: '#{e}'"; nil
+    rescue => e; raise DTPException.new("<#{self.class}>: #{e.message}")
     end
   end
 end

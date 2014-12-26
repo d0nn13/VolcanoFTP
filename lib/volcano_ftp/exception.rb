@@ -14,3 +14,4 @@ class ClientConnectionLost < RuntimeError
   end
 end
 
+class DTPException < Exception; end

@@ -4,7 +4,6 @@ require_relative 'protocol_handler'
 require_relative 'ftp_response'
 require_relative 'dtp'
 
-#TODO: clean exception reporting
 
 # Base class for all commands
 class FTPCommand
@@ -299,6 +298,7 @@ class FTPCommandStor < FTPCommand
 
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue DTPException => e; $log.puts(e.message); raise FTP425
     rescue ClientConnectionLost; nil
     rescue FTP550; FTPResponse(550, 'Destination dir not writable')
     rescue FTP425; FTPResponse425.new
@@ -343,6 +343,7 @@ class FTPCommandRetr < FTPCommand
 
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue DTPException => e; $log.puts(e.message); raise FTP425
     rescue ClientConnectionLost; nil
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")
     rescue FTP425; FTPResponse425.new

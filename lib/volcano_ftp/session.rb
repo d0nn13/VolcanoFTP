@@ -2,13 +2,19 @@ require_relative 'dtp'
 require_relative'stat_helper'
 
 class Session
-  attr_reader :preferences, :cwd, :mode, :dtp
+  attr_reader :preferences, :previous_cmd, :cwd, :mode, :dtp
 
   def initialize(client)
     @preferences = client.server.preferences
+    @previous_cmd = nil
     @cwd = Pathname.new('/')
     @mode = 'A'
     @dtp = nil
+  end
+
+  def set_previous_cmd(cmd)
+    raise TypeError.new('Not a FTPCommand') unless cmd.is_a?(FTPCommand)
+    @previous_cmd = cmd
   end
 
   def set_cwd(path)

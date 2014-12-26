@@ -29,6 +29,8 @@ class FTPCommandPwd < FTPCommand
   def do(client)
     session = client.session
     FTPResponse.new(257, "\"#{session.cwd}\"")
+  ensure
+    session.set_previous_cmd(self)
   end
 end
 
@@ -53,12 +55,15 @@ class FTPCommandCwd < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure
+      session.set_previous_cmd(self)
     end
   end
 end
 
 # ==== CDUP ====
 # Runs 'CWD ..'
+# TODO: use much polymorphism
 class FTPCommandCdup < FTPCommand
   def initialize(arg)
     super()
@@ -68,6 +73,8 @@ class FTPCommandCdup < FTPCommand
   def do(client)
     session = client.session
     FTPCommandCwd.new('..').do(client)
+  ensure
+    session.set_previous_cmd(self)
   end
 end
 
@@ -106,7 +113,9 @@ class FTPCommandList < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
-    ensure; session.dtp.close unless session.dtp.nil?
+    ensure
+      session.dtp.close unless session.dtp.nil?
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -143,6 +152,8 @@ class FTPCommandDele < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -168,6 +179,8 @@ class FTPCommandMkd < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -194,6 +207,8 @@ class FTPCommandRmd < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -238,7 +253,9 @@ class FTPCommandStor < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
-    ensure; session.dtp.close unless session.dtp.nil?
+    ensure
+      session.dtp.close unless session.dtp.nil?
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -280,7 +297,9 @@ class FTPCommandRetr < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
-    ensure; session.dtp.close unless session.dtp.nil?
+    ensure
+      session.dtp.close unless session.dtp.nil?
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -301,6 +320,8 @@ class FTPCommandPasv < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -324,6 +345,8 @@ class FTPCommandPort < FTPCommand
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new
+    ensure
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -337,7 +360,10 @@ class FTPCommandSyst < FTPCommand
   end
 
   def do(client)
+    session = client.session
     FTPResponseSystem.new
+  ensure
+    session.set_previous_cmd(self)
   end
 end
 
@@ -350,7 +376,10 @@ class FTPCommandFeat < FTPCommand
   end
 
   def do(client)
+    session = client.session
     FTPResponseFeatures.new
+  ensure
+    session.set_previous_cmd(self)
   end
 end
 
@@ -367,6 +396,8 @@ class FTPCommandType < FTPCommand
     session = client.session
     session.set_mode(@args[0]) unless @args.length.zero?
     FTPResponse200.new
+  ensure
+    session.set_previous_cmd(self)
   end
 end
 
@@ -379,7 +410,10 @@ class FTPCommandNoop < FTPCommand
   end
 
   def do(client)
+    session = client.session
     FTPResponse.new(200, 'Still here (:')
+  ensure
+    session.set_previous_cmd(self)
   end
 end
 
@@ -392,9 +426,12 @@ class FTPCommandUser < FTPCommand
     @args << user
   end
 
-  def do(session)
+  def do(client)
     begin
+      session = client.session
       FTPResponse.new(230, "User '#{@args[0]}' accepted")
+    ensure
+      session.set_previous_cmd(self)
     end
   end
 end
@@ -418,6 +455,9 @@ class FTPCommandQuit < FTPCommand
   end
 
   def do(client)
+    session = client.session
     FTPResponseGoodbye.new
+  ensure
+    session.set_previous_cmd(self)
   end
 end

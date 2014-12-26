@@ -15,6 +15,8 @@ class ProtocolHandler
         DELE: {obj: FTPCommandDele, pattern: /^DELE\s+(?<args>.+)\s*$/i},
         MKD:  {obj: FTPCommandMkd,  pattern: /^MKD\s+(?<args>.+)\s*$/i},
         RMD:  {obj: FTPCommandRmd,  pattern: /^RMD\s+(?<args>.+)\s*$/i},
+        RNFR: {obj: FTPCommandRnfr, pattern: /^RNFR\s+(?<args>.+)\s*$/i},
+        RNTO: {obj: FTPCommandRnto, pattern: /^RNTO\s+(?<args>.+)\s*$/i},
         STOR: {obj: FTPCommandStor, pattern: /^STOR\s+(?<args>.+)\s*$/i},
         RETR: {obj: FTPCommandRetr, pattern: /^RETR\s+(?<args>.+)\s*$/i},
         PASV: {obj: FTPCommandPasv, pattern: /^PASV\s*$/i},

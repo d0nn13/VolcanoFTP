@@ -18,6 +18,7 @@ class ProtocolHandler
         RNFR: {obj: FTPCommandRnfr, pattern: /^RNFR\s+(?<args>.+)\s*$/i},
         RNTO: {obj: FTPCommandRnto, pattern: /^RNTO\s+(?<args>.+)\s*$/i},
         SIZE: {obj: FTPCommandSize, pattern: /^SIZE\s+(?<args>.+)\s*$/i},
+        MDTM: {obj: FTPCommandMdtm, pattern: /^MDTM\s+(?<args>.+)\s*$/i},
         STOR: {obj: FTPCommandStor, pattern: /^STOR\s+(?<args>.+)\s*$/i},
         RETR: {obj: FTPCommandRetr, pattern: /^RETR\s+(?<args>.+)\s*$/i},
         PASV: {obj: FTPCommandPasv, pattern: /^PASV\s*$/i},

@@ -265,6 +265,8 @@ class FTPCommandRnto < FTPCommand
 end
 
 
+# ==== SIZE ====
+# Size of server file
 class FTPCommandSize < FTPCommand
   def initialize(path)
     super()
@@ -277,11 +279,7 @@ class FTPCommandSize < FTPCommand
       session = client.session
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path))
-      syscall = "wc -c #{session.sys_path(path)} 2> /dev/null"
-
-      ret = `#{syscall}`
-      raise unless $?.to_i.zero?
-      size = /^\s*(\d+).*$/.match(ret)[1]
+      size = File.size(session.sys_path(path))
 
       FTPResponse.new(213, size)
 

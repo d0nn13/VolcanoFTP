@@ -265,6 +265,36 @@ class FTPCommandRnto < FTPCommand
 end
 
 
+class FTPCommandSize < FTPCommand
+  def initialize(path)
+    super()
+    @code = 'SIZE'
+    @args << path unless path.nil?
+  end
+
+  def do(client)
+    begin
+      session = client.session
+      path = session.make_path(@args)
+      raise FTP550 unless File.exists?(session.sys_path(path))
+      syscall = "wc -c #{session.sys_path(path)} 2> /dev/null"
+
+      ret = `#{syscall}`
+      raise unless $?.to_i.zero?
+      size = /^\s*(\d+).*$/.match(ret)[1]
+
+      FTPResponse.new(213, size)
+
+    rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")
+    rescue => e
+      puts self.class, e.class, e, e.backtrace
+      FTPResponse500.new
+    ensure
+      session.set_previous_cmd(self)
+    end
+  end
+end
+
 # ==== STOR ====
 # Transfers file from client to server
 class FTPCommandStor < FTPCommand

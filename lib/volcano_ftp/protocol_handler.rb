@@ -17,6 +17,7 @@ class ProtocolHandler
         RMD:  {obj: FTPCommandRmd,  pattern: /^RMD\s+(?<args>.+)\s*$/i},
         RNFR: {obj: FTPCommandRnfr, pattern: /^RNFR\s+(?<args>.+)\s*$/i},
         RNTO: {obj: FTPCommandRnto, pattern: /^RNTO\s+(?<args>.+)\s*$/i},
+        SIZE: {obj: FTPCommandSize, pattern: /^SIZE\s+(?<args>.+)\s*$/i},
         STOR: {obj: FTPCommandStor, pattern: /^STOR\s+(?<args>.+)\s*$/i},
         RETR: {obj: FTPCommandRetr, pattern: /^RETR\s+(?<args>.+)\s*$/i},
         PASV: {obj: FTPCommandPasv, pattern: /^PASV\s*$/i},
@@ -63,7 +64,6 @@ class ProtocolHandler
     rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
       raise ClientConnectionLost.new(client)
     end
-
   end
 
   # Send a response to a client

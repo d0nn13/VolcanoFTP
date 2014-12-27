@@ -89,7 +89,9 @@ class FTPCommandList < FTPCommand
         ls_args = ''
         path = session.make_path(@args)
       end
-      syscall = "#{@ls_cmd} #{ls_args} '#{session.sys_path(path)}'"
+
+      raise FTP550 unless File.exists?(session.sys_path(path))
+      syscall = "#{@ls_cmd} #{ls_args} '#{session.sys_path(path)}' 2> /dev/null"
       raise FTP425 if session.dtp.nil? || session.dtp.open == false
 
       ret = `#{syscall}`
@@ -99,6 +101,8 @@ class FTPCommandList < FTPCommand
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue ClientConnectionLost; nil
+    rescue FTP550
+      FTPResponse.new(550, "File #{path} does not exist")
     rescue FTP425; FTPResponse.new(425, 'Can\'t open data connection.')
     rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')
     rescue => e

@@ -12,7 +12,7 @@ VOLCANO_MAX_WKNB=4096
 # default server settings values
 # (used only if a setting has not been defined
 # either with CLI args or config file)
-VOLCANO_DEFAULT_WKNB = 64
+VOLCANO_DEFAULT_WKNB = 16
 VOLCANO_DEFAULT_BIND = '127.0.0.1'
 VOLCANO_DEFAULT_PORT = 4242
 

@@ -26,7 +26,7 @@ class VolcanoLog
     path = preferences[:log_path]
     unless (@mode & LOG_MODE_FILE).zero?
       raise LogException.new('VolcanoLog: No log file path specified') if path.nil?
-      @file = File.new(path, 'w')
+      @file = File.new(path, 'a')
       @file.sync = true
       @file.puts('')
       (0..100).each { @file.putc('==') }
@@ -62,6 +62,6 @@ class VolcanoLog
   end
 
   def close_log
-    unless (@mode & LOG_MODE_FILE).zero? || @file.nil?; @file.close; end
+    @file.close unless (@mode & LOG_MODE_FILE).zero? || @file.nil?
   end
 end

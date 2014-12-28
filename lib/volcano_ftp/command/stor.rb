@@ -15,13 +15,15 @@ class FTPCommandStor < FTPCommand
       raise FTP550 unless FileTest.writable?(session.sys_path(dest).dirname)
       @ph.send_response(client, FTPResponse.new(150, 'File status OK.'))
 
-      $log.puts(" -- Starting reception to '#{dest}' --", client.id)
+      $log.puts(" -- Reception of '#{dest}' started --", client.id)
+      start_ts = Time.now
       data = session.dtp.recv
 
       raise FTP426 if data.nil?
       File.makedirs(session.sys_path(dest.dirname)) unless Dir.exists?(session.sys_path(dest).dirname)
       File.write(session.sys_path(dest), data)
-      $log.puts(" -- Reception of '#{dest}' ended --", client.id)
+      t_xfer = Time.at(Time.now - start_ts).localtime('+00:00').strftime('%H:%M:%S.%6N')
+      $log.puts(" -- Reception of '#{dest}' ended (#{t_xfer}) --", client.id)
 
       # session.stats_data[:conn][:transfer_nb] += 1  # Update stats
       # session.stats_data[:transfer][:name] = dest

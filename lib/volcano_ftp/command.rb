@@ -38,4 +38,3 @@ require_relative('command/noop')
 require_relative('command/user')
 require_relative('command/pass')
 require_relative('command/quit')
-

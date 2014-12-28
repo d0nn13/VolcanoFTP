@@ -15,10 +15,13 @@ class FTPCommandRetr < FTPCommand
       raise FTP425 unless session.dtp.open
       @ph.send_response(client, FTPResponse.new(150, 'File status OK.'))
 
-      $log.puts(" -- Starting sending of '#{path}' --", client.id)
+      $log.puts(" -- Sending of '#{path}' started --", client.id)
+      start_ts = Time.now
       size = session.dtp.send(session.mode, File.binread(session.sys_path(path)))
+      
       raise FTP426 unless size
-      $log.puts(" -- Sending of '#{path}' ended --", client.id)
+      t_xfer = Time.at(Time.now - start_ts).localtime('+00:00').strftime('%H:%M:%S.%6N')
+      $log.puts(" -- Sending of '#{path}' ended (#{t_xfer}) --", client.id)
 
       # session.stats_data[:conn][:transfer_nb] += 1  # Update stats
       # session.stats_data[:transfer][:name] = path

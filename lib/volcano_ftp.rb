@@ -10,7 +10,6 @@ require_relative 'volcano_ftp/exception'
 PID_FILENAME = 'data/.volcano.pid'
 
 IDLE_DELAY = 0.2
-ACCEPT_THREAD_DELAY = 0.1
 HANDLE_REQUEST_THREAD_DELAY = 0.001
 NO_REQUEST_TIMEOUT = 2
 
@@ -58,7 +57,6 @@ class VolcanoFTP
   private
   def accept(cf)
     while 1
-      loop_ts = Time.now
 
       begin
         select([@srv_sock])
@@ -71,9 +69,6 @@ class VolcanoFTP
       rescue Exception => e
         $log.puts('Exception caught in accept thread')
         raise e
-      ensure
-        dly = Time.now - loop_ts
-        sleep(ACCEPT_THREAD_DELAY - dly) if dly < ACCEPT_THREAD_DELAY
       end
 
     end

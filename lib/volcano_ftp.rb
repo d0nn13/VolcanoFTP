@@ -61,7 +61,7 @@ class VolcanoFTP
       loop_ts = Time.now
 
       begin
-        next if select([@srv_sock], nil, nil, 0).nil?
+        select([@srv_sock])
         client = cf.build_client(@srv_sock.accept)
         n = push_client(client)
         $log.puts("! Client connected: #{client} (Total: #{n})", client.id)

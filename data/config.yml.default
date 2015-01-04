@@ -1,0 +1,13 @@
+# NETWORKING
+# - bind_ip: IPv4 address to bind to listen for incoming connections (default=127.0.0.1)
+# - external_ip: IPv4 address promoted by the response to the PASV command (default=0.0.0.0)
+# - port: listening port (default=4000, min=1025, max=65535)
+bind_ip         : "127.0.0.1"
+external_ip     : "0.0.0.0"
+port            : 4000
+
+# OTHER
+# - root_dir: server 'chroot' directory (default="~")
+# - worker_nb: amount of worker threads to use (default=16, min=1, max=4096)
+root_dir        : "~"
+worker_nb       : 16

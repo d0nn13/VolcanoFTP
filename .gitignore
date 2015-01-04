@@ -5,4 +5,5 @@
 .volcano.pid
 *.log
 *.db
+config.yml
 

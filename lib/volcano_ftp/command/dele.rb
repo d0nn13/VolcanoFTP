@@ -10,11 +10,13 @@ class FTPCommandDele < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       File.delete(session.sys_path(path))
       FTPResponse.new(250, "File \"#{path}\" deleted")
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed")
     rescue => e
       puts self.class, e.class, e, e.backtrace

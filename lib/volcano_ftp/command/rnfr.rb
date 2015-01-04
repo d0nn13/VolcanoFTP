@@ -13,11 +13,13 @@ class FTPCommandRnfr < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path))
       @source = path
       FTPResponse.new(350, 'File exists, ready for destination name')
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (no such file or directory)")
     rescue => e
       puts self.class, e.class, e, e.backtrace

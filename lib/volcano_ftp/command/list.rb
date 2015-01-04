@@ -11,6 +11,7 @@ class FTPCommandList < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       if @args.length.zero? == false && @args[0].match(/^-/)
         ls_args = @args[0]
         path = session.cwd
@@ -31,6 +32,7 @@ class FTPCommandList < FTPCommand
       FTPResponse.new(226, 'Closing data connection.')
 
     rescue ClientConnectionLost; nil
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")
     rescue FTP425; FTPResponse.new(425, 'Can\'t open data connection.')
     rescue FTP426; FTPResponse.new(426, 'Connection closed; transfer aborted.')

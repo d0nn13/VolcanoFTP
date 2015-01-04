@@ -1,16 +1,21 @@
 # ==== USER ====
 # Login command
 class FTPCommandUser < FTPCommand
-  def initialize(user='anonymous')
+  attr_reader :user
+
+  def initialize(user)
     super()
     @code = 'USER'
     @args << user
+    @user = nil
   end
 
   def do(client)
     begin
       session = client.session
-      FTPResponse.new(230, "User '#{@args[0]}' accepted")
+      # FTPResponse.new(230, "User '#{@args[0]}' accepted")
+      @user = @args[0]
+      FTPResponse.new(331, "Allright, provide #{@user}'s password please")
     ensure
       session.set_previous_cmd(self)
     end

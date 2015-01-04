@@ -7,9 +7,15 @@ class FTPCommandPwd < FTPCommand
   end
 
   def do(client)
-    session = client.session
-    FTPResponse.new(257, "\"#{session.cwd}\"")
-  ensure
-    session.set_previous_cmd(self)
+    begin
+      session = client.session
+      raise FTP530 unless session.logged?
+      raise FTP530 unless session.logged?
+      FTPResponse.new(257, "\"#{session.cwd}\"")
+
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
+    ensure
+      session.set_previous_cmd(self)
+    end
   end
 end

@@ -10,10 +10,13 @@ class FTPCommandPort < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       bind = @args[0].split(',')[0..3].join('.')
       port = @args[0].split(',')[4].to_i * 256 + @args[0].split(',')[5].to_i
       session.set_dtp(DTPActive.new(bind, port))
       FTPResponse.new(200, 'Entered active mode')
+
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue => e
       puts self.class, e.class, e, e.backtrace
       FTPResponse500.new

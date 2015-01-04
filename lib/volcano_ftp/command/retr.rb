@@ -10,6 +10,7 @@ class FTPCommandRetr < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path)) && File.file?(session.sys_path(path))
       raise FTP425 unless session.dtp.open
@@ -31,6 +32,7 @@ class FTPCommandRetr < FTPCommand
 
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue DTPException => e; $log.puts(e.message); FTPResponse425.new
     rescue ClientConnectionLost; nil
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")

@@ -11,7 +11,7 @@ class Job
   end
 
   def do
-      @request.do(@requester)
+    @request.do(@requester)
   end
 
   def to_s

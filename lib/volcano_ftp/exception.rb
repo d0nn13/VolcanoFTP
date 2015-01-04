@@ -1,9 +1,10 @@
-class FTP400 < StandardError; end
+class FTP400 < Exception; end
 class FTP425 < FTP400; end
 class FTP426 < FTP400; end
 
-class FTP500 < StandardError; end
+class FTP500 < Exception; end
 class FTP503 < FTP500; end
+class FTP530 < FTP500; end
 class FTP550 < FTP500; end
 
 class ClientConnectionLost < RuntimeError

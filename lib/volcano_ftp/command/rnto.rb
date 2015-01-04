@@ -10,6 +10,7 @@ class FTPCommandRnto < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       source = session.previous_cmd.source
       raise FTP503 if source.nil?
       dest = session.make_path(@args)
@@ -17,6 +18,7 @@ class FTPCommandRnto < FTPCommand
       File.rename(session.sys_path(source), session.sys_path(dest))
       FTPResponse.new(250, "Successfully renamed \"#{source}\" to \"#{dest}\"")
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue FTP503; FTPResponse.new(503, 'Bad sequence of commands')
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (destination filename exists)")
     rescue => e

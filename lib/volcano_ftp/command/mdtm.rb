@@ -10,12 +10,14 @@ class FTPCommandMdtm < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       path = session.make_path(@args)
       raise FTP550 unless File.exists?(session.sys_path(path))
       mtime = File.mtime(session.sys_path(path)).strftime('%Y%m%d%H%M%S')
 
       FTPResponse.new(213, mtime)
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue FTP550; FTPResponse.new(550, "File #{path} does not exist")
     rescue => e
       puts self.class, e.class, e, e.backtrace

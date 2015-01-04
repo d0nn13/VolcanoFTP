@@ -5,6 +5,7 @@ require_relative 'volcano_ftp/preferences'
 require_relative 'volcano_ftp/client'
 require_relative 'volcano_ftp/worker'
 require_relative 'volcano_ftp/exception'
+require_relative 'volcano_ftp/auth'
 
 #$DEBUG = true
 PID_FILENAME = 'data/.volcano.pid'

@@ -8,10 +8,15 @@ class FTPCommandType < FTPCommand
   end
 
   def do(client)
-    session = client.session
-    session.set_mode(@args[0]) unless @args.length.zero?
-    FTPResponse200.new
-  ensure
-    session.set_previous_cmd(self)
+    begin
+      session = client.session
+      raise FTP530 unless session.logged?
+      session.set_mode(@args[0]) unless @args.length.zero?
+      FTPResponse200.new
+
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
+    ensure
+      session.set_previous_cmd(self)
+    end
   end
 end

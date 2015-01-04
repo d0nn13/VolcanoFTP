@@ -10,11 +10,13 @@ class FTPCommandRmd < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       path = session.make_path(@args)
       raise FTP550 unless Dir.exists?(session.sys_path(path))
       Dir.rmdir(session.sys_path(path))
       FTPResponse.new(250, "Directory \"#{path}\" deleted")
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue Errno::ENOTEMPTY; FTPResponse.new(550, "#{@code} command failed (directory not empty)")
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (no such file or directory)")
     rescue => e

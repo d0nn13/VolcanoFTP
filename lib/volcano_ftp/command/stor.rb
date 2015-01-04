@@ -10,6 +10,7 @@ class FTPCommandStor < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       dest = session.cwd + Pathname.new(@args[0]).basename
       raise FTP425 unless session.dtp.open
       raise FTP550 unless FileTest.writable?(session.sys_path(dest).dirname)
@@ -33,6 +34,7 @@ class FTPCommandStor < FTPCommand
 
       FTPResponse.new(226, 'Closing data connection.')
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue DTPException => e; $log.puts(e.message); FTPResponse425.new
     rescue ClientConnectionLost; nil
     rescue FTP550; FTPResponse(550, 'Destination dir not writable')

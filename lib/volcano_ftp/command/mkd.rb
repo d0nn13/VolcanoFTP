@@ -10,11 +10,13 @@ class FTPCommandMkd < FTPCommand
   def do(client)
     begin
       session = client.session
+      raise FTP530 unless session.logged?
       path = session.make_path(@args)
       raise FTP550 if Dir.exists?(session.sys_path(path))
       Dir.mkdir(session.sys_path(path))
       FTPResponse.new(250, "Directory \"#{path}\" created")
 
+    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
     rescue FTP550; FTPResponse.new(550, "#{@code} command failed (directory exists)")
     rescue => e
       puts self.class, e.class, e, e.backtrace

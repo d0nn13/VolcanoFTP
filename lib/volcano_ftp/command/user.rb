@@ -13,7 +13,6 @@ class FTPCommandUser < FTPCommand
   def do(client)
     begin
       session = client.session
-      # FTPResponse.new(230, "User '#{@args[0]}' accepted")
       @user = @args[0]
       FTPResponse.new(331, "Allright, provide #{@user}'s password please")
     ensure

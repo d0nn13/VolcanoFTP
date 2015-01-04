@@ -16,7 +16,7 @@ class FTPCommandCwd < FTPCommand
       session.set_cwd(path)
       FTPResponse.new(250, "Directory changed to #{path}")
 
-    rescue FTP530; FTPResponse.new(530, "Ya ain't logged.")
+    rescue FTP530; FTPResponse.new(530, 'Ya ain\'t logged.')
     rescue FTP550; FTPResponse.new(550, 'CWD command failed (directory does not exist)')
     rescue => e
       puts self.class, e.class, e, e.backtrace

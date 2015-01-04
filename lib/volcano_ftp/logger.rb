@@ -35,7 +35,7 @@ class VolcanoLog
     @mutex = Mutex.new
   end
 
-  def self.log(msg, cid=0, level=0)
+  def self.log(msg, cid=nil, level=0)
     id_str = cid.nil? && '' || " [##{cid.to_s}]"
     case level
       when LOG_INFO; color = LOG_LBLUE

@@ -116,6 +116,11 @@ class Preferences
     begin
       return unless File.exists?(VOLCANO_CONFIG_FILE_PATH)
       cfg = YAML.load_file(VOLCANO_CONFIG_FILE_PATH)
+      cfg.keys.each { |fk|
+        unless @preferences.keys.include?(fk.to_sym)
+          VolcanoLog.log("Unknown key in config file: '#{fk}'") 
+        end
+      }
       set_worker_nb(cfg['worker_nb']) if cfg.keys.include?('worker_nb')
       set_bind_ip(cfg['bind_ip']) if cfg.keys.include?('bind_ip')
       set_external_ip(cfg['external_ip']) if cfg.keys.include?('external_ip')

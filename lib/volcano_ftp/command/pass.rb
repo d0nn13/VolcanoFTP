@@ -17,6 +17,7 @@ class FTPCommandPass < FTPCommand
       pass = @args[0]
       session.set_logged(Auth.grant?(user, pass))
       raise FTP530 unless session.logged?
+      client.set_name(user)
       FTPResponse.new(230, "Welcome, '#{user}'.")
 
     rescue FTP503; FTPResponse.new(503, 'Login with USER first')

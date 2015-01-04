@@ -1,15 +1,21 @@
 require_relative 'session'
 
 class Client
-  attr_reader :server, :socket, :session, :id
+  attr_reader :server, :socket, :session, :id, :name
 
   def initialize(server, socket, id)
     @server = server
     @socket = socket
-    @socket_info = "#{socket.peeraddr(:hostname)[2]} (#{socket.peeraddr(:hostname)[3]}:#{socket.peeraddr(:hostname)[1]})"
     @session = Session.new(self)
     @id = id
+    @name = nil
     @stats_handler = nil
+    @socket_info = "#{socket.peeraddr(:hostname)[2]} (#{socket.peeraddr(:hostname)[3]}:#{socket.peeraddr(:hostname)[1]})"
+  end
+
+  def set_name(name)
+    raise TypeError.new('Not a String') unless name.is_a?(String)
+    @name = name
   end
 
   def set_stats_handler(handler)
@@ -21,7 +27,9 @@ class Client
   end
 
   def to_s
-    "#{@socket_info}"
+    name = "#{@socket_info}"
+    name += " (#{@name})" unless @name.nil?
+    name
   end
 end
 

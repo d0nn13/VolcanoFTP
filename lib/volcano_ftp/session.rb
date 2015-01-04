@@ -1,5 +1,5 @@
 require_relative 'dtp'
-require_relative'stat_helper'
+#require_relative 'stat_helper'
 
 class Session
   attr_reader :preferences, :previous_cmd, :cwd, :mode, :dtp

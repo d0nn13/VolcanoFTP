@@ -118,7 +118,7 @@ class Preferences
       cfg = YAML.load_file(VOLCANO_CONFIG_FILE_PATH)
       cfg.keys.each { |fk|
         unless @preferences.keys.include?(fk.to_sym)
-          VolcanoLog.log("Unknown key in config file: '#{fk}'") 
+          VolcanoLog.log("Unknown key in config file: '#{fk}'", 0, LOG_ERROR) 
         end
       }
       set_worker_nb(cfg['worker_nb']) if cfg.keys.include?('worker_nb')

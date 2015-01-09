@@ -26,4 +26,6 @@ class FTPCommandPass < FTPCommand
       session.set_previous_cmd(self)
     end
   end
+
+  def to_s; "#{@code} [********]"; end
 end
